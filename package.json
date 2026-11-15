@@ -1,0 +1,58 @@
+{
+  "name": "bgdi-hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:reset": "tsx scripts/reset.ts",
+    "db:check": "tsx scripts/db-check.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.16",
+    "@hookform/resolvers": "^7.0.6",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "date-fns-tz": "^3.2.0",
+    "dexie": "^4.4.7",
+    "drizzle-orm": "0.44",
+    "lucide-react": "^1.73.0",
+    "motion": "^14.14.0",
+    "next": "15",
+    "next-intl": "4",
+    "postgres": "^4.1.1",
+    "react": "19",
+    "react-dom": "19",
+    "react-hook-form": "^7.92.0",
+    "server-only": "^0.0.1",
+    "three": "0.170.0",
+    "uuid": "^14.0.3",
+    "zod": "3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4",
+    "@types/node": "22",
+    "@types/react": "19",
+    "@types/react-dom": "19",
+    "@types/three": "0.170.0",
+    "drizzle-kit": "0.31",
+    "eslint": "9",
+    "eslint-config-next": "15",
+    "tailwindcss": "4",
+    "tsx": "^4.23.15",
+    "typescript": "5",
+    "vitest": "^5.1.0"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "common": {
+    "skip": "Fò lọ sí àkóónú",
+    "joinProgramme": "Darapọ̀ mọ́ ètò kan",
+    "donate": "Ṣe ìtọrẹ",
+    "signIn": "Wọlé",
+    "menu": "Mẹ́nù",
+    "close": "Pa á dé",
+    "language": "Èdè",
+    "back": "Padà",
+    "next": "Tẹ̀síwájú",
+    "seeAll": "Wo gbogbo rẹ̀",
+    "send": "Fi ránṣẹ́"
+  },
+  "nav": {
+    "about": "Nípa wa",
+    "programmes": "Àwọn ètò",
+    "impact": "Ipa wa",
+    "stories": "Àwọn ìtàn",
+    "getInvolved": "Kópa"
+  },
+  "footer": {
+    "about": "Nípa wa",
+    "contact": "Kàn sí wa",
+    "donate": "Ṣe ìtọrẹ",
+    "reportConcern": "Ròyìn ìṣòro kan"
+  },
+  "home": {
+    "hero": {
+      "title": "Ìdánilẹ́kọ̀ọ́ ìjiyàn ọ̀fẹ́ fún àwọn ọmọbìnrin",
+      "primary": "Darapọ̀ mọ́ ètò kan",
+      "secondary": "Wo àwọn ètò wa"
+    },
+    "steps": { "title": "Bí a ṣe ń darapọ̀" },
+    "close": { "title": "Darapọ̀ mọ́ ètò ọ̀fẹ́ ní ilé-ìwé rẹ" }
+  },
+  "join": {
+    "chooser": {
+      "title": "Darapọ̀ mọ́ ètò kan",
+      "lead": "Yan èyí tí ó bá ọ mu.",
+      "student": "Akẹ́kọ̀ọ́ ni mí",
+      "volunteer": "Mo fẹ́ yọ̀ǹda ara mi",
+      "school": "Mú BGDI wá sí ilé-ìwé mi"
+    },
+    "student": {
+      "firstName": "Orúkọ àkọ́kọ́",
+      "surname": "Orúkọ ìdílé",
+      "age": "Ọmọ ọdún mélòó ni ọ́?",
+      "scaleLow": "Rárá",
+      "scaleHigh": "Gan-an",
+      "submit": "Fi àwọn ìdáhùn mi ránṣẹ́"
+    }
+  },
+  "consent": {
+    "title": "{studentFirstName} fẹ́ darapọ̀ mọ́ Black Girl's Dream Initiative",
+    "give": "Mo fún un ní àṣẹ",
+    "decline": "Mi ò fún un ní àṣẹ",
+    "yes": "Bẹ́ẹ̀ni",
+    "no": "Rárá"
+  }
+}
