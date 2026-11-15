@@ -1,0 +1,7 @@
+﻿.next/
+.next-build/
+.data/
+node_modules/
+shots/
+.env*
+!.env.example
