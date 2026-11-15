@@ -11,3 +11,7 @@ shots
 next-env.d.ts
 
 .next-build/
+
+.vercel
+.env*
+!.env.example
