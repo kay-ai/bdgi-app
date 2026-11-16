@@ -16,8 +16,18 @@ export default async function DonatePage({ params }: { params: Promise<{ locale:
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("donate");
-  const [programmes, st, faqs] = await Promise.all([listProgrammes(), getSettings(["donation_presets"]), listFaqs(["donors"])]);
-  const presets = ((st.donation_presets as { NGN?: number[] } | undefined)?.NGN ?? [2000, 5000, 10000, 25000, 50000]).slice(0, 6);
+  const [programmes, st, faqs] = await Promise.all([
+    listProgrammes(),
+    getSettings(["donation_presets", "donations_usd_enabled", "donation_impact_lines"]),
+    listFaqs(["donors"]),
+  ]);
+  const saved = (st.donation_presets ?? {}) as { NGN?: number[]; USD?: number[] };
+  const presets = {
+    NGN: (saved.NGN ?? [2000, 5000, 10000, 25000, 50000]).slice(0, 6),
+    USD: (saved.USD ?? [10, 25, 50, 100]).slice(0, 6),
+  };
+  // Impact lines stay hidden until BGDI confirms real unit costs (spec/11 §1.3): keys like "NGN:5000".
+  const impactLines = (st.donation_impact_lines ?? {}) as Record<string, string>;
 
   return (
     <>
@@ -37,6 +47,8 @@ export default async function DonatePage({ params }: { params: Promise<{ locale:
               <DonateForm
                 locale={locale}
                 presets={presets}
+                usdEnabled={st.donations_usd_enabled === true}
+                impactLines={impactLines}
                 programmes={programmes.filter((p) => p.acceptsDesignatedGifts).map((p) => ({ id: p.id, name: p.nameEn }))}
               />
             </div>

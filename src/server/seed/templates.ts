@@ -577,8 +577,16 @@ export const messageTemplates = [
       "email"
     ],
     "subjectEn": "Thank you for your gift to BGDI",
-    "bodyEn": "HTML email with amount, date, reference, designation, receipt PDF attached.",
-    "variables": [],
+    "bodyEn": "Thank you for your gift to Black Girl's Dream Initiative.\n\nAmount: {{amount}}\nDate: {{date}}\nWhere it goes: {{designation}}\nReference: {{reference}}\n\nYour receipt {{receiptCode}} is attached as a PDF. Anyone can check it at {{verifyUrl}}{{manage}}\n\nEvery BGDI programme is free for students and schools because of gifts like yours.",
+    "variables": [
+      "amount",
+      "date",
+      "designation",
+      "reference",
+      "receiptCode",
+      "verifyUrl",
+      "manage"
+    ],
     "allowBeforeConsent": true,
     "ignoresQuietHours": false,
     "note": null

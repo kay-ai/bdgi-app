@@ -6,7 +6,8 @@ import { Photo } from "@/components/site/Photo";
 import { Shape } from "@/components/site/Shape";
 import { Close } from "@/components/site/Close";
 import { programmePhoto } from "@/content/photos";
-import { fmt } from "@/lib/format";
+import { fmt, money } from "@/lib/format";
+import { raisedFor } from "@/server/services/donations";
 import { getHistoricalFigure, getProgramme, listFaqs, listLessonPlans, listProgrammes } from "@/server/services/public";
 
 export const revalidate = 300;
@@ -32,6 +33,10 @@ export default async function ProgrammePage({ params }: { params: Promise<{ loca
     getHistoricalFigure(slug),
     listFaqs(p.isEnrolling ? ["students", "guardians"] : ["donors"]),
   ]);
+  // Fundraising progress (spec/11 §3), in the target's own currency only.
+  const target = p.fundraisingTargetMinor && p.fundraisingCurrency ? { minor: p.fundraisingTargetMinor, currency: p.fundraisingCurrency } : null;
+  const raised = target ? await raisedFor(p.id, target.currency) : 0;
+  const pct = target ? Math.min(100, Math.round((raised / target.minor) * 100)) : 0;
   const photo = programmePhoto[slug] ?? "programmeOther";
   const external = slug === "edutracka" ? "https://edutracka.ai" : null;
   const cta = p.isEnrolling
@@ -114,6 +119,30 @@ export default async function ProgrammePage({ params }: { params: Promise<{ loca
                 </dl>
               ) : (
                 <p className="text-muted">{t("noFigures")}</p>
+              )}
+              {target && (
+                <div className="grid gap-3">
+                  <h3 className="t-label" id="raise-h">
+                    {t("raisedTitle")}
+                  </h3>
+                  <div
+                    className="progress"
+                    role="progressbar"
+                    aria-labelledby="raise-h"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={pct}
+                    aria-valuetext={t("raised", { raised: money(raised, target.currency), target: money(target.minor, target.currency) })}
+                  >
+                    <span style={{ width: `${Math.max(pct, raised > 0 ? 2 : 0)}%` }} />
+                  </div>
+                  <p className="tabular">{t("raised", { raised: money(raised, target.currency), target: money(target.minor, target.currency) })}</p>
+                  <div>
+                    <Link href="/donate" className="link">
+                      {t("support")}
+                    </Link>
+                  </div>
+                </div>
               )}
             </div>
             {faqs.length > 0 && (

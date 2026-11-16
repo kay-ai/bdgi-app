@@ -3,6 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import { decrypt, encrypt, lookupHash } from "@/lib/crypto";
 import { providerFor } from "@/server/providers";
+import { attachmentsFor } from "./receipts";
 
 type Channel = "whatsapp" | "sms" | "email";
 
@@ -77,11 +78,17 @@ export async function dispatch(ids: string[]) {
     const [tpl] = m.templateKey
       ? await db.select().from(s.messageTemplate).where(eq(s.messageTemplate.key, m.templateKey))
       : [];
-    const res = await providerFor(m.channel).send({
-      to: decrypt(m.toAddress),
-      body: decrypt(m.bodyRendered),
-      subject: tpl?.subjectEn ?? null,
-    });
+    let res: Awaited<ReturnType<ReturnType<typeof providerFor>["send"]>>;
+    try {
+      res = await providerFor(m.channel).send({
+        to: decrypt(m.toAddress),
+        body: decrypt(m.bodyRendered),
+        subject: tpl?.subjectEn ?? null,
+        attachments: await attachmentsFor(m.templateKey, m.variables),
+      });
+    } catch (e) {
+      res = { ok: false, error: e instanceof Error ? e.message : "send failed" };
+    }
     await db
       .update(s.message)
       .set(

@@ -651,3 +651,36 @@ a.card:hover { box-shadow: none; transform: translateY(-2px); border-color: var(
 .wall { margin-left: 0; }
 .shape__pop { inset: 5% 7% 0 0; }
 .shape--drop .shape__pop { inset: 0 0 5% 7%; }
+
+/* ---------- Donations (spec/11) ---------- */
+/* Pill choices: frequency, currency, preset amounts. aria-pressed carries the state. */
+.opt {
+  min-height: 48px; padding: 0 16px; border-radius: var(--r-btn);
+  background: #fffdf8; color: var(--p-ink); border: 1px solid var(--p-line-strong);
+  font: inherit; font-weight: 500; cursor: pointer;
+  transition: background-color 140ms var(--ease), border-color 140ms var(--ease), color 140ms var(--ease);
+}
+.opt:hover { border-color: var(--p-ink); }
+.opt[aria-pressed="true"] { background: var(--p-ink); color: var(--p-bg); border-color: var(--p-ink); }
+.opt:focus-visible, .input:focus-visible { outline: 2px solid var(--p-ink); outline-offset: 2px; }
+.input[aria-invalid="true"] { border-color: var(--p-danger); }
+
+.progress { height: 12px; border-radius: var(--r-btn); background: var(--p-line); overflow: hidden; }
+.progress > span { display: block; height: 100%; border-radius: inherit; background: var(--p-gold); }
+
+.badge {
+  display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: var(--r-btn);
+  font-size: 13px; font-weight: 500; background: var(--p-surface); color: var(--p-ink); white-space: nowrap;
+}
+.badge--paid { background: #dcefe6; color: #13523c; }
+.badge--failed { background: #f6dcd9; color: #8a1c16; }
+.badge--refunded { background: #ece6f5; color: #4a3570; }
+.badge--initiated { background: #fff1c7; color: #5c4600; }
+
+/* Console tables: scroll inside their panel on narrow screens, never the page. */
+.table-wrap { overflow-x: auto; border-radius: var(--r-md); background: var(--p-bg); }
+.table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.table th { text-align: left; font-size: 13px; font-weight: 500; color: var(--p-muted); padding: 12px 14px; border-bottom: 1px solid var(--p-line); white-space: nowrap; }
+.table td { padding: 12px 14px; border-bottom: 1px solid var(--p-line); vertical-align: top; }
+.table tr:last-child td { border-bottom: 0; }
+.table td.num, .table th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }

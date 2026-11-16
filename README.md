@@ -34,7 +34,15 @@ No database server or Docker is needed: with `DATABASE_URL` empty, the app uses 
 
 **Only one process may open the PGlite folder at a time.** Stop `pnpm dev` before running `db:migrate`, `db:seed` or `db:reset`; two processes writing to it at once can corrupt it. If every page fails with `RuntimeError: Aborted()`, run `pnpm db:check`. If that fails too, the folder is damaged: move `.data/pglite` aside and run `pnpm db:migrate` and `pnpm db:seed` again.
 
-Messages (WhatsApp, SMS, email) and payments use **console providers** by default: nothing leaves your machine. Outgoing messages print to the terminal, including the guardian's permission link and code, and are stored in the `message` table. Donations are marked paid immediately.
+Messages (WhatsApp, SMS, email) and payments use **console providers** by default: nothing leaves your machine. Outgoing messages print to the terminal, including the guardian's permission link and code, and are stored in the `message` table. Donations are marked paid immediately (an amount ending in 13, such as ₦513, fails instead), and the receipt email prints with its PDF attachment's name and size.
+
+### Paystack test mode
+
+1. In the Paystack dashboard (test mode), copy the test secret key into `.env.local` as `PAYSTACK_SECRET_KEY=sk_test_…` and set `PAYMENTS_PROVIDER=paystack`.
+2. Set the test webhook URL to `{APP_URL}/api/webhooks/paystack`. Paystack cannot reach `localhost`, so locally use a tunnel (for example `cloudflared tunnel --url http://localhost:3001`) and set `APP_URL` to the tunnel address. Without a webhook the thank-you page still confirms the payment by asking Paystack.
+3. Pay with one of Paystack's published test cards. Never use real card details or live keys outside production.
+
+Staff see gifts at `/console/donations` (local only until sign-in, see DECISIONS.md D-012): totals, filters, CSV export, supporter pages, receipt PDFs, resend receipt, record an offline gift, mark refunded. Anyone can check a receipt at `/verify/receipt/[code]`.
 
 ### Environment
 
@@ -45,7 +53,10 @@ Copy `.env.example` to `.env.local`. Everything has a safe local default. Values
 | `APP_URL` | Public base URL, used in links inside messages |
 | `DATABASE_URL` | PostgreSQL connection string. Empty means PGlite |
 | `ENCRYPTION_KEY` | 32 bytes, base64. Encrypts names, phones, dates of birth and free text. **Required in production**; a fixed development key is used locally |
-| `*_PROVIDER` | `console` locally; real providers arrive with M2 (Paystack) and the messaging work |
+| `*_PROVIDER` | `console` locally. `PAYMENTS_PROVIDER=paystack` uses Paystack; messaging providers arrive with M8 |
+| `PAYSTACK_SECRET_KEY` | Paystack secret key. Test key (`sk_test_…`) locally and on staging; signs and checks webhooks |
+| `PAYSTACK_ALLOW_LIVE` | `true` only in production secrets. Without it a `sk_live_…` key is refused |
+| `CONSOLE_DEV_ACCESS` | The console has no sign-in until M3, so it is open only outside production. `off` closes it locally too |
 
 ## Checks
 
@@ -56,6 +67,8 @@ pnpm typecheck
 ```bash
 pnpm test
 ```
+
+The tests include the M2 acceptance checks (`tests/donations.test.ts`): they run the Paystack flow against an in-memory database with Paystack's API replaced by a fake, so they need no keys or network.
 
 ```bash
 pnpm build
@@ -92,4 +105,6 @@ Built and checked in the browser (1440 and 375 wide):
 - Student intake with offline drafts, guardian permission page with code, volunteer application, school request, contact and partner enquiries, safeguarding reports with `SG-YYYY-NNNN` references.
 - Old WordPress paths redirect (spec/04 §8).
 
-Next milestones (spec/14): M2 Paystack donations, M3 sign-in and permissions, then the Hub and console.
+- Donations (M2): Paystack hosted checkout for one-off and monthly gifts, signed and idempotent webhook, PDF receipts by email, public receipt check, fundraising progress on programme pages, and `/console/donations` (development only until sign-in).
+
+Next milestones (spec/14): M3 sign-in and permissions, then the Hub and the rest of the console.

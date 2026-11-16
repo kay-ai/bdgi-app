@@ -2,6 +2,18 @@ import { defineConfig } from "vitest/config";
 import path from "node:path";
 
 export default defineConfig({
-  resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
-  test: { include: ["tests/**/*.test.ts"], environment: "node" },
+  resolve: {
+    alias: {
+      "@": path.resolve(import.meta.dirname, "src"),
+      "server-only": path.resolve(import.meta.dirname, "tests/support/server-only.ts"),
+    },
+  },
+  test: {
+    include: ["tests/**/*.test.ts"],
+    environment: "node",
+    // Database tests run against an in-memory PGlite, never the developer's .data folder.
+    env: { PGLITE_DIR: "memory://", DATABASE_URL: "" },
+    testTimeout: 30_000,
+    hookTimeout: 60_000,
+  },
 });
