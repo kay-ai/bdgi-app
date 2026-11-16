@@ -3,7 +3,10 @@ import { formatDate, naira, usd } from "@/lib/format";
 import { verifyReceipt } from "@/server/services/receipts";
 
 export const dynamic = "force-dynamic";
-export const metadata = { robots: { index: false } };
+export async function generateMetadata() {
+  const t = await getTranslations("donate");
+  return { title: t("verifyTitle"), robots: { index: false } };
+}
 
 /** Public receipt check (spec/11 §2.5): date, amount and "valid" only. No names. */
 export default async function VerifyReceipt({ params }: { params: Promise<{ locale: string; code: string }> }) {

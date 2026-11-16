@@ -4,7 +4,10 @@ import { naira, usd } from "@/lib/format";
 import { confirmDonation } from "@/server/services/donations";
 
 export const dynamic = "force-dynamic";
-export const metadata = { robots: { index: false } };
+export async function generateMetadata() {
+  const t = await getTranslations("donate");
+  return { title: t("thanksTitle"), robots: { index: false } };
+}
 
 /**
  * After checkout (spec/11 §2.2). The status comes from the database, settled by the webhook or by
