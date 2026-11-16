@@ -89,7 +89,7 @@ export function Chips<T extends string>({
                 onChange(on ? arr.filter((x) => x !== o.value) : [...arr, o.value]);
               } else onChange(o.value);
             }}
-            className={`inline-flex min-h-12 items-center gap-2 rounded-[8px] px-4 text-[16px] transition-colors duration-150 ${
+            className={`inline-flex min-h-12 items-center gap-2 rounded-full px-5 text-[16px] transition-colors duration-150 ${
               on ? "bg-ink text-bg" : "bg-surface text-ink hover:bg-[#e9e0cd]"
             }`}
           >

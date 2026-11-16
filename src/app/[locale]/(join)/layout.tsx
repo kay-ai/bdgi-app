@@ -11,7 +11,7 @@ export default async function JoinLayout({ children }: { children: ReactNode }) 
   return (
     <div className="min-h-svh bg-bg">
       <header className="site-header">
-        <div className="mx-auto flex h-full max-w-[720px] items-center justify-between gap-4 px-4">
+        <div className="join-bar mx-auto flex max-w-[720px] items-center justify-between gap-4">
           <Link href="/" className="logo">
             <Logo label={t("meta.siteName")} height={36} />
           </Link>

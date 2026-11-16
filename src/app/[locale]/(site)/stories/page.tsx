@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { Photo } from "@/components/site/Photo";
+import { Shape } from "@/components/site/Shape";
 import { Cover } from "@/components/site/Cover";
 import { formatDate } from "@/lib/format";
 import { listStories } from "@/server/services/content";
@@ -41,9 +41,7 @@ export default async function StoriesPage({ params }: { params: Promise<{ locale
               </div>
             </div>
             <div className="col-span-6 lg:col-start-7">
-              <div className="frame fit aspect-[4/3] w-full">
-                <Photo slot="storyA" alt={t("photoAlt")} priority />
-              </div>
+              <Shape shape="arch" slot="storyA" alt={t("photoAlt")} priority />
             </div>
           </div>
         </div>

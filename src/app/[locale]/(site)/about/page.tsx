@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { Photo } from "@/components/site/Photo";
+import { Shape } from "@/components/site/Shape";
 import { Close } from "@/components/site/Close";
 import { TeamRow } from "@/components/site/TeamCard";
 import { fmt } from "@/lib/format";
@@ -42,9 +42,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               </div>
             </div>
             <div className="col-span-6 lg:col-start-7">
-              <div className="frame fit aspect-[4/5] w-full">
-                <Photo slot="founder" alt={t("founderAlt")} priority />
-              </div>
+              <Shape shape="arch" slot="founder" alt={t("founderAlt")} priority />
             </div>
           </div>
         </div>
@@ -93,9 +91,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               </ul>
             </div>
             <div className="col-span-6 lg:col-start-7">
-              <div className="frame fit aspect-[4/3] w-full">
-                <Photo slot="team" alt={t("photoAlt")} />
-              </div>
+              <Shape shape="drop" slot="team" alt={t("photoAlt")} />
             </div>
           </div>
         </div>
@@ -153,9 +149,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               </div>
             </div>
             <div className="col-span-6 lg:col-start-7">
-              <div className="frame fit aspect-[4/3] w-full">
-                <Photo slot="volunteersArriving" alt={t("teamPhotoAlt")} />
-              </div>
+              <Shape shape="pebble" slot="volunteersArriving" alt={t("teamPhotoAlt")} />
             </div>
           </div>
         </div>

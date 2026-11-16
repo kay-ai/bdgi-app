@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Photo } from "@/components/site/Photo";
+import { Shape } from "@/components/site/Shape";
 import { ContactForm } from "@/components/site/ContactForm";
 import { fmt } from "@/lib/format";
 import { getPublicTotals, listVisiblePartners } from "@/server/services/public";
@@ -50,9 +50,7 @@ export default async function PartnerPage({ params }: { params: Promise<{ locale
               </div>
             </div>
             <div className="col-span-6 lg:col-start-7">
-              <div className="frame fit aspect-[4/3] w-full">
-                <Photo slot="programmeCompetition" alt={t("photoAlt")} priority />
-              </div>
+              <Shape shape="drop" slot="programmeCompetition" alt={t("photoAlt")} priority />
             </div>
           </div>
         </div>

@@ -45,6 +45,8 @@ export function createJourney(canvas: HTMLCanvasElement) {
   let H = 1;
   let dist = 1;
   let mobile = false;
+  let gutterW = 80;
+  let laneFits = true;
 
   /* ---------- The plane ---------- */
   const plane = paperPlane();
@@ -120,28 +122,53 @@ export function createJourney(canvas: HTMLCanvasElement) {
     const sections = [...main.querySelectorAll<HTMLElement>(":scope > section")].filter((s) => s.offsetHeight > 0);
     const wrap = main.querySelector<HTMLElement>(".wrap");
     const gutter = wrap ? Math.max(16, wrap.getBoundingClientRect().left) : 24;
+    gutterW = gutter;
 
-    const size = mobile ? 66 : 108;
-    const lane = Math.max(gutter * 0.5, 22);
-    const sideX = (side: number, s: number) => (side > 0 ? W - gutter - s * (mobile ? 0.6 : 0.95) : gutter + s * (mobile ? 0.6 : 0.95));
+    // What the plane must never cover: words, photographs, buttons and fields. Each section's
+    // inked extent is measured, so the journey only uses the empty bands between sections and
+    // the page's side margins.
+    const INK = "h1,h2,h3,p,li,img,a,button,input,textarea,select,figure,.frame,.wall,.bleed,.card";
+    const inked = (sec: HTMLElement) => {
+      let top = Infinity;
+      let bot = -Infinity;
+      sec.querySelectorAll<HTMLElement>(INK).forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width < 2 || r.height < 2) return;
+        top = Math.min(top, r.top + sy);
+        bot = Math.max(bot, r.bottom + sy);
+      });
+      const r = sec.getBoundingClientRect();
+      return { top: Number.isFinite(top) ? top : r.top + sy, bot: Number.isFinite(bot) ? bot : r.top + sy };
+    };
+    const ink = sections.map(inked);
 
-    // Milestones sit on the line between two sections, where the padding leaves room.
-    const spots: { x: number; y: number; side: number; size: number; isEnd: boolean }[] = [];
+    const want = mobile ? 66 : 108;
+    const sideX = (side: number, s: number) => (side > 0 ? W - gutter - s * (mobile ? 0.6 : 0.7) : gutter + s * (mobile ? 0.6 : 0.7));
+
+    // Milestones sit in the empty band between two sections, sized to fit it; a band too thin
+    // (a full-bleed photograph touching the line) gets none.
+    const spots: { x: number; y: number; side: number; size: number; band: number; isEnd: boolean }[] = [];
     let side = 1;
     for (let i = 0; i < sections.length - 1; i++) {
-      const r = sections[i]!.getBoundingClientRect();
-      spots.push({ x: sideX(side, size), y: r.bottom + sy, side, size, isEnd: false });
+      const band = ink[i + 1]!.top - ink[i]!.bot;
+      const size = Math.min(want, band * 0.62);
+      if (size < (mobile ? 40 : 60)) continue;
+      spots.push({ x: sideX(side, size), y: (ink[i]!.bot + ink[i + 1]!.top) / 2, side, size, band, isEnd: false });
       side = -side;
     }
-    // The cap: in the open half of a closing section when there is one, else at the foot of the page.
-    const last = sections[sections.length - 1];
-    if (last?.hasAttribute("data-journey-end") && !mobile) {
-      const r = last.getBoundingClientRect();
-      const big = Math.min(190, W * 0.16);
-      spots.push({ x: W - gutter - big * 0.9, y: r.top + sy + r.height * 0.5, side: 1, size: big, isEnd: true });
-    } else {
-      spots.push({ x: sideX(side, size), y: bottom - (mobile ? 6 : 0), side, size, isEnd: true });
-    }
+    // The cap: at the foot of the page, in the band under the last section's content when it fits.
+    const lastInk = ink[ink.length - 1];
+    const footBand = lastInk ? bottom - lastInk.bot : 0;
+    const big = Math.min(mobile ? 80 : 150, Math.max(footBand * 0.62, 60));
+    if (spots.length && spots[spots.length - 1]!.side === side) side = -side;
+    spots.push({
+      x: sideX(side, big),
+      y: lastInk && footBand > 90 ? (lastInk.bot + bottom) / 2 : bottom - big * 0.4,
+      side,
+      size: big,
+      band: footBand,
+      isEnd: true,
+    });
 
     let n = 0;
     for (const s of spots) {
@@ -178,38 +205,52 @@ export function createJourney(canvas: HTMLCanvasElement) {
     };
     const center = (y: number) => y - H * 0.46;
 
-    // Take-off: in from the left edge, across the hero.
-    const startY = top0 + Math.min(H * 0.3, 260);
-    add(-140, top0 + H * 0.78, 260, -INTRO_KEYS);
-    add(W * 0.3, top0 + H * 0.52, 230, -INTRO_KEYS * 0.5);
-    add(W * (mobile ? 0.7 : 0.74), startY, 150, 0);
+    // Between objects the plane keeps to the margin, small enough to fit it; where the margin is
+    // too narrow (tablet, phone) it leaves the screen and comes back for the next object.
+    laneFits = gutter >= 64;
+    const lane = (sd: number) => (laneFits ? (sd > 0 ? W - gutter / 2 : gutter / 2) : sd > 0 ? W + 90 : -90);
 
-    let from = 1; // which side the plane is on
+    // Take-off: in from the left, through the empty corner under the hero's words (desktop),
+    // then out of the hero along its foot. On a phone it crosses once and leaves.
+    const hero = ink[0];
+    const heroFoot = hero ? Math.min(hero.bot, top0 + H) : top0 + H * 0.8;
+    if (mobile || !hero) {
+      add(-140, top0 + H * 0.6, 220, -INTRO_KEYS);
+      add(W + 120, top0 + H * 0.5, 180, 0);
+    } else {
+      const restY = Math.min(heroFoot - 70, top0 + H - 120);
+      add(-140, restY + 40, 240, -INTRO_KEYS);
+      add(gutter + W * 0.14, restY + 10, 210, -INTRO_KEYS * 0.4);
+      add(gutter + W * 0.26, restY, 170, 0);
+    }
+
+    let from = mobile ? 1 : -1; // which side the plane is on
     spots.forEach((s, i) => {
-      const r = s.size * (s.isEnd ? 0.72 : 0.78);
+      const r = Math.min(s.size * (s.isEnd ? 0.72 : 0.78), s.band * 0.42);
       const base = center(s.y);
       if (s.side !== from) {
-        // Cross the page above the object, close to the viewer.
-        add(W * 0.5, s.y - r - (mobile ? 90 : 150), 190, base - 330);
+        // Down the margin to the band, then across the page along it, at the object's height.
+        if (i > 0 || mobile) add(lane(from), s.y, 120, base - 420);
+        add(W * 0.5, s.y, 170, base - 260);
         from = s.side;
+      } else {
+        add(lane(s.side), s.y - r * 1.6, 110, base - 200);
       }
-      // One and a half turns around it: outside, under, inside (behind), over, outside, under.
+      // One and a half turns around it, kept inside the band: outside, under, inside, over.
       for (let j = 0; j < 7; j++) {
         const phi = (-45 + j * 82) * (Math.PI / 180);
-        add(s.x + s.side * r * Math.cos(phi), s.y + r * Math.sin(phi), 46 + 78 * Math.cos(phi), base + (j - 3) * 46);
+        add(s.x + s.side * r * 1.25 * Math.cos(phi), s.y + r * Math.sin(phi), 46 + 78 * Math.cos(phi), base + (j - 3) * 46);
       }
       const next = spots[i + 1];
       if (next) {
-        // Leave along the boundary, then drift down the gutter on the next object's side.
-        const laneX = next.side > 0 ? W - lane : lane;
-        if (next.side !== s.side) add(W * 0.5, s.y + 6, 150, base + 250);
+        // Leave to the margin on this side and ride it down to the next band.
         const span = next.y - s.y;
-        add(laneX + next.side * -14, s.y + Math.min(span * 0.35, r + 170), 110, center(s.y + span * 0.35));
-        add(laneX, s.y + span * 0.62, 90, center(s.y + span * 0.62));
-        from = next.side;
+        add(lane(s.side), s.y + Math.min(span * 0.2, r * 2), 100, center(s.y + span * 0.2));
+        add(lane(s.side), s.y + span * 0.6, 90, center(s.y + span * 0.6));
+        from = s.side;
       } else {
         // Land beside the cap.
-        add(s.x - s.side * r * 1.5, s.y - r * 0.15, 120, base + 230);
+        add(s.x - s.side * r * 1.6, s.y - r * 0.1, 120, base + 230);
       }
     });
 
@@ -219,7 +260,16 @@ export function createJourney(canvas: HTMLCanvasElement) {
     if (lastKey > maxScroll) keys = keys.map((k) => (k > 0 ? (k * maxScroll) / lastKey : k));
 
     curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.5);
-    plane.scale.setScalar(mobile ? 0.75 : 1.5);
+  }
+
+  /** Full size over the empty bands; small enough to fit the margin when it rides down it. */
+  function planeScale(x: number) {
+    const big = mobile ? 0.75 : 1.5;
+    if (!laneFits) return big;
+    const small = Math.min(big, (gutterW - 16) / 62);
+    const edge = Math.min(x, W - x);
+    if (edge <= gutterW) return small;
+    return THREE.MathUtils.lerp(small, big, Math.min(1, (edge - gutterW) / 140));
   }
 
   /** Scroll key to a parameter on the curve. */
@@ -279,6 +329,7 @@ export function createJourney(canvas: HTMLCanvasElement) {
     // Heading, with a bank into each turn and a slow hover when the page is still.
     const hover = Math.sin(now * 1.7) * 4;
     plane.position.set(p0.x, p0.y + hover, p0.z);
+    plane.scale.setScalar(planeScale(p0.x));
     if (p1.distanceToSquared(p0) > 0.01) plane.lookAt(p1.x, p1.y + hover, p1.z);
     const a1 = Math.atan2(p1.y - p0.y, p1.x - p0.x);
     const a2 = Math.atan2(p2.y - p1.y, p2.x - p1.x);
@@ -291,7 +342,7 @@ export function createJourney(canvas: HTMLCanvasElement) {
 
     // Its shadow lies on the page, further away and fainter the higher it flies.
     const lift = Math.max(0, p0.z);
-    const ps = (mobile ? 62 : 104) * (1 + lift / 400);
+    const ps = 69 * planeScale(p0.x) * (1 + lift / 400);
     planeShadow.position.set(p0.x + lift * 0.16, p0.y - 14 - lift * 0.3, 0.5);
     planeShadow.scale.set(ps, ps * 0.62, 1);
     (planeShadow.material as THREE.MeshBasicMaterial).opacity = THREE.MathUtils.clamp(0.34 - lift / 900, 0.1, 0.34);

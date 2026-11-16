@@ -27,12 +27,12 @@
   },
   "home": {
     "hero": {
-      "title": "Ìdánilẹ́kọ̀ọ́ ìjiyàn ọ̀fẹ́ fún àwọn ọmọbìnrin",
       "primary": "Darapọ̀ mọ́ ètò kan",
       "secondary": "Wo àwọn ètò wa"
     },
-    "steps": { "title": "Bí a ṣe ń darapọ̀" },
-    "close": { "title": "Darapọ̀ mọ́ ètò ọ̀fẹ́ ní ilé-ìwé rẹ" }
+    "close": {
+      "title": "Darapọ̀ mọ́ ètò ọ̀fẹ́ ní ilé-ìwé rẹ"
+    }
   },
   "join": {
     "chooser": {

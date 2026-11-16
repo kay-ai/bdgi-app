@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Photo } from "@/components/site/Photo";
+import { Shape } from "@/components/site/Shape";
 import { Close } from "@/components/site/Close";
 import { ReachTiles } from "@/components/site/ReachTiles";
 import { fmt } from "@/lib/format";
@@ -49,9 +49,7 @@ export default async function ImpactPage({ params }: { params: Promise<{ locale:
               <p className="t-small text-muted">{th("impact.source", { note: totals.sourceNote })}</p>
             </div>
             <div className="col-span-6 lg:col-start-7">
-              <div className="frame fit aspect-[4/5] w-full">
-                <Photo slot="session" alt={th("impact.photoAlt")} priority />
-              </div>
+              <Shape shape="arch" slot="session" alt={th("impact.photoAlt")} priority />
             </div>
           </div>
         </div>
@@ -89,12 +87,20 @@ export default async function ImpactPage({ params }: { params: Promise<{ locale:
               <h2 id="reach-h" className="t-h2">
                 {t("reachTitle")}
               </h2>
-              <p>{th("reach.lead")}</p>
+              <p>
+                {th("reach.lead")}
+                {reach.some((r) => r.schools > 0) ? ` ${th("reach.mapNote")}` : null}
+              </p>
             </div>
             <div className="col-span-6 lg:col-start-7">
-              <ReachTiles lgas={reach} label={th("reach.mapLabel")} low={th("reach.legendLow")} high={th("reach.legendHigh")} />
+              {reach.some((r) => r.schools > 0) ? (
+                <ReachTiles lgas={reach} label={th("reach.mapLabel")} low={th("reach.legendLow")} high={th("reach.legendHigh")} />
+              ) : (
+                <Shape shape="arch" slot="hallWide" alt={th("reach.photoAlt")} />
+              )}
             </div>
           </div>
+          {reach.some((r) => r.schools > 0) && (
           <details className="mt-12">
             <summary className="cursor-pointer font-medium">{t("tableCaption")}</summary>
             <table className="mt-4 w-full max-w-[720px] text-left text-[15px]">
@@ -118,6 +124,7 @@ export default async function ImpactPage({ params }: { params: Promise<{ locale:
               </tbody>
             </table>
           </details>
+          )}
         </div>
       </section>
 
