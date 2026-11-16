@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Photo } from "@/components/site/Photo";
+import { Shape } from "@/components/site/Shape";
 import { Close } from "@/components/site/Close";
 import { programmePhoto } from "@/content/photos";
 import { fmt } from "@/lib/format";
@@ -86,9 +87,7 @@ export default async function ProgrammePage({ params }: { params: Promise<{ loca
                 </ol>
               </div>
               <div className="col-span-6 lg:col-start-7">
-                <div className="frame fit aspect-[4/5] w-full">
-                  <Photo slot="session" alt={p.nameEn} />
-                </div>
+                <Shape shape="pebble" slot="session" alt={p.nameEn} />
               </div>
             </div>
           </div>

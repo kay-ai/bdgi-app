@@ -2,8 +2,8 @@
   "meta": {
     "siteName": "Black Girl's Dream Initiative",
     "titleTemplate": "{page} | Black Girl's Dream Initiative",
-    "homeTitle": "Free debate training for girls in Oyo and Osun | Black Girl's Dream Initiative",
-    "homeDescription": "Black Girl's Dream Initiative trains secondary school students in public speaking, debate and STEM at their own schools. Free for students and schools."
+    "homeTitle": "Quality education for girls in Oyo and Osun | Black Girl's Dream Initiative",
+    "homeDescription": "Black Girl's Dream Initiative is promoting quality education and creating a gender-balanced society: free public speaking, debate and STEM programmes for secondary school students in Oyo and Osun."
   },
   "common": {
     "skip": "Skip to content",
@@ -29,7 +29,41 @@
     "programmes": "Programmes",
     "impact": "Impact",
     "stories": "Stories",
-    "getInvolved": "Get involved"
+    "getInvolved": "Get involved",
+    "mega": {
+      "programmes": "Our programmes",
+      "involved": "Ways to help",
+      "about": "Who we are",
+      "joinStudent": "Join as a student",
+      "joinStudentLine": "Free, ages 10 to 18",
+      "volunteer": "Volunteer as a coach",
+      "volunteerLine": "Coach, judge or help run events",
+      "school": "Bring us to your school",
+      "schoolLine": "Our programmes at no cost",
+      "partner": "Partner with us",
+      "partnerLine": "Fund a school or a programme",
+      "donate": "Donate",
+      "donateLine": "Support free sessions",
+      "aboutUs": "About us",
+      "aboutUsLine": "Our story and values",
+      "team": "Team",
+      "teamLine": "The people behind BGDI",
+      "stories": "Stories",
+      "storiesLine": "From our schools",
+      "events": "Events",
+      "eventsLine": "Competitions and workshops",
+      "faq": "Questions",
+      "faqLine": "Answers for parents and schools",
+      "allProgrammes": "All programmes",
+      "allProgrammesLine": "Compare all four",
+      "cardLabel": "Every programme is free",
+      "lines": {
+        "debate-and-public-speaking": "Eight weekly sessions at school",
+        "inspire-her-future": "A one-day STEM hackathon",
+        "ibadan-schools-debate-competition": "The yearly contest at Mapo Hall",
+        "eko-dara": "Out-of-school children into school"
+      }
+    }
   },
   "footer": {
     "mission": "A youth-led not-for-profit in Ibadan training girls to speak, argue and lead, and working for every child's right to learn.",
@@ -56,11 +90,12 @@
   },
   "home": {
     "hero": {
-      "title": "Free debate training for girls",
-      "lead": "Black Girl's Dream Initiative trains secondary school students in public speaking, debate and STEM, at their own schools. {students} students in {schools} schools across Oyo and Osun since 2021.",
+      "title": "Promoting quality education and creating a gender-balanced society",
+      "lead": "Free programmes in public speaking, debate and STEM for secondary school students, run at their own schools. {students} students in {schools} schools across Oyo and Osun since 2021.",
       "primary": "Join a programme",
       "secondary": "See our programmes",
-      "photoAlt": "A student speaking at the Ibadan Schools Debate Competition"
+      "photoAlt": "A student speaking at the lectern, seen through the outline of the girl in the Black Girl's Dream logo",
+      "next": "Next event"
     },
     "programmes": {
       "title": "Four programmes",
@@ -76,18 +111,22 @@
       "line3": "The Inspire Her Future hackathon brought {ihf} girls from 9 schools into STEM for a day.",
       "source": "Source: {note}.",
       "link": "See the impact report",
-      "photoAlt": "A debate training session in a secondary school classroom"
+      "photoAlt": "A debate training session in a secondary school classroom",
+      "wallAlt": "A student at the Ibadan Schools Debate Competition"
     },
     "reach": {
       "title": "Schools in Oyo and Osun",
-      "lead": "Our coaches work in public and private secondary schools across both states. Each square is one local government area; the darker it is, the more schools we work with there.",
+      "lead": "Our coaches work in public and private secondary schools across both states.",
       "link": "See the map",
       "legendLow": "No schools yet",
       "legendHigh": "Five or more",
-      "mapLabel": "Local government areas of Oyo and Osun shaded by the number of schools BGDI works with"
+      "mapLabel": "Local government areas of Oyo and Osun shaded by the number of schools BGDI works with",
+      "photoAlt": "Students filling the hall at the Ibadan Schools Debate Competition",
+      "mapNote": "Each dot is one local government area; the darker it is, the more schools we work with there.",
+      "linkNoMap": "See our impact"
     },
     "steps": {
-      "title": "How joining works",
+      "title": "Join in four steps",
       "s1t": "Sign up in five minutes",
       "s1": "Tell us your name, school and what you'd like to learn. It works on any phone.",
       "s2t": "Your guardian says yes",
@@ -96,14 +135,20 @@
       "s3": "Our team puts you in a group at your school with up to 30 students.",
       "s4t": "Your first session",
       "s4": "A message tells you the day, time and room. Sessions are weekly, for one term.",
-      "photoAlt": "Volunteers in BGDI shirts arriving at a school"
+      "photoAlt": "Volunteers in BGDI shirts arriving at a school",
+      "photoForm": "A student filling in a form",
+      "photoGuardian": "A student hugging her mother at an event",
+      "photoGroup": "Students seated together at a session",
+      "photoSession": "Students clapping at a session"
     },
     "people": {
       "title": "Volunteer coaches run every session",
       "lead": "{volunteers} volunteers, most of them students and young professionals in Ibadan, have passed reference checks and safeguarding training.",
       "link": "Volunteer as a coach",
       "supportedBy": "Supported by",
-      "portraitAlt": "Portrait of a member of the BGDI team"
+      "portraitAlt": "Portrait of a member of the BGDI team",
+      "photoA": "BGDI volunteers in yellow shirts",
+      "photoB": "BGDI volunteers smiling together"
     },
     "stories": {
       "title": "Stories from our schools",
@@ -112,7 +157,12 @@
     },
     "close": {
       "title": "Join a free programme at your school",
-      "lead": "For students aged 10 to 18 in Oyo and Osun. It takes five minutes and works on any phone."
+      "lead": "For students aged 10 to 18 in Oyo and Osun. It takes five minutes and works on any phone.",
+      "photoAlt": "Students, judges and volunteers on stage at the competition"
+    },
+    "competition": {
+      "link": "See the competition",
+      "photoAlt": "The hall at the Ibadan Schools Debate Competition, full of students"
     }
   },
   "programmes": {

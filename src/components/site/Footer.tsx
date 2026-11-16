@@ -12,11 +12,12 @@ export async function Footer({ phone, email, city }: { phone: string; email: str
     <footer className="site-footer">
       <div className="wrap">
         <div className="grid12">
-          <div className="col-span-6 grid content-start gap-4 lg:col-span-4">
-            <Link href="/" className="logo">
-              <Logo label={tm("siteName")} onDark height={56} />
+          <div className="col-span-6 grid content-start gap-6 lg:col-span-4">
+            <Link href="/" className="logo" aria-label={tm("siteName")}>
+              <Logo label="" onDark height={48} />
             </Link>
-            <p className="muted max-w-[36ch] text-[15px]">{t("mission")}</p>
+            <p className="site-footer__name">{tm("siteName")}</p>
+            <p className="muted max-w-[36ch] text-[16px]">{t("mission")}</p>
           </div>
           <div className="col-span-3 lg:col-span-2 lg:col-start-6">
             <h2>{t("organisation")}</h2>

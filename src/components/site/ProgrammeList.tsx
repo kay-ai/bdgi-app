@@ -13,21 +13,31 @@ export function ProgrammeList({ items, pictures }: { items: Item[]; pictures: Re
   const [active, setActive] = useState(items[0]?.slug ?? "");
   return (
     <div className="grid12 items-start">
-      <ol className="rows rows--tight col-span-6 lg:col-span-6" role="list">
-        {items.map((it) => (
+      <ol className="rows rows--tight col-span-6 lg:col-span-5" role="list">
+        {items.map((it, i) => (
           <li key={it.slug} onMouseEnter={() => setActive(it.slug)} onFocus={() => setActive(it.slug)}>
-            <Link href={`/programmes/${it.slug}`} className="group grid gap-1 no-underline" data-active={active === it.slug}>
-              <span className="serif text-[24px] leading-tight">
-                <span className="uline group-hover:[background-size:100%_1px]">{it.name}</span>
+            <Link
+              href={`/programmes/${it.slug}`}
+              className="peek-row group grid grid-cols-[40px_minmax(0,1fr)] gap-x-3 gap-y-1 no-underline"
+              data-active={active === it.slug}
+            >
+              <span
+                className={`step-num row-span-3 mt-1 transition-colors duration-200 ${active === it.slug ? "" : "!bg-surface"}`}
+                aria-hidden="true"
+              >
+                {i + 1}
               </span>
-              <span className="text-[15px] leading-normal">{it.line}</span>
+              <span className="serif text-[26px] leading-tight">
+                <span className="uline peek-row__name group-hover:[background-size:100%_1px]">{it.name}</span>
+              </span>
+              <span className="text-[16px] leading-normal">{it.line}</span>
               <span className="t-label">{it.who}</span>
             </Link>
           </li>
         ))}
       </ol>
-      <div className="col-span-6 lg:col-span-5 lg:col-start-8 max-sm:hidden">
-        <div className="frame fit-short aspect-[4/5] w-full">
+      <div className="col-span-6 lg:col-span-6 lg:col-start-7 max-sm:hidden">
+        <div className="frame fit-short aspect-[4/3] w-full">
           {items.map((it) => (
             <div
               key={it.slug}

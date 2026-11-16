@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { Photo } from "@/components/site/Photo";
+import { Shape } from "@/components/site/Shape";
 import { listEvents } from "@/server/services/content";
 
 export const revalidate = 300;
@@ -74,9 +74,7 @@ export default async function EventsPage({ params }: { params: Promise<{ locale:
               )}
             </div>
             <div className="col-span-6 lg:col-start-8 lg:col-span-5">
-              <div className="frame fit aspect-[4/5] w-full">
-                <Photo slot="programmeCompetition" alt={t("photoAlt")} priority />
-              </div>
+              <Shape shape="pebble" slot="programmeCompetition" alt={t("photoAlt")} priority />
             </div>
           </div>
         </div>

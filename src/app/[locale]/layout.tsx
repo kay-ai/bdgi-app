@@ -20,7 +20,6 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     description: t("homeDescription"),
     applicationName: t("siteName"),
     openGraph: { siteName: t("siteName"), type: "website", locale: locale === "yo" ? "yo_NG" : "en_NG" },
-    icons: { icon: "/icon.svg" },
   };
 }
 

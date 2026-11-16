@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { Photo } from "@/components/site/Photo";
+import { Shape } from "@/components/site/Shape";
 import { TeamRow } from "@/components/site/TeamCard";
 import { fmt } from "@/lib/format";
 import { getPublicTotals, listTeam } from "@/server/services/public";
@@ -33,9 +33,7 @@ export default async function TeamPage({ params }: { params: Promise<{ locale: s
               <p className="t-lead text-muted">{t("lead")}</p>
             </div>
             <div className="col-span-6 lg:col-start-7">
-              <div className="frame fit aspect-[4/3] w-full">
-                <Photo slot="volunteersArriving" alt={t("photoAlt")} priority />
-              </div>
+              <Shape shape="drop" slot="volunteersArriving" alt={t("photoAlt")} priority />
             </div>
           </div>
         </div>
