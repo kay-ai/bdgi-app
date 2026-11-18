@@ -96,12 +96,16 @@ export const message = pgTable(
     broadcastId: uuid("broadcast_id").references(() => broadcast.id),
     eventKey: text("event_key").unique(),
     costMinor: integer("cost_minor"),
+    /** Not before this time: quiet hours (spec/08 §2) and retry backoff. Null means now. */
+    sendAfter: tz("send_after"),
+    /** Failed tries on the current channel (retries at 1, 5 and 30 minutes, then the next channel). */
+    attempts: integer("attempts").notNull().default(0),
     sentAt: tz("sent_at"),
     deliveredAt: tz("delivered_at"),
     readAt: tz("read_at"),
     ...timestamps,
   },
-  (t) => [index("message_person_created_idx").on(t.personId, t.createdAt.desc())],
+  (t) => [index("message_person_created_idx").on(t.personId, t.createdAt.desc()), index("message_status_send_after_idx").on(t.status, t.sendAfter)],
 );
 
 export const channelOptOut = pgTable(

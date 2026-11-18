@@ -19,7 +19,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:reset": "tsx scripts/reset.ts",
     "db:check": "tsx scripts/db-check.ts",
-    "auth:invite-admin": "tsx --conditions react-server scripts/invite-admin.ts"
+    "auth:invite-admin": "tsx --conditions react-server scripts/invite-admin.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",
@@ -45,6 +46,7 @@
     "zod": "3"
   },
   "devDependencies": {
+    "@playwright/test": "1.56.1",
     "@tailwindcss/postcss": "4",
     "@types/node": "22",
     "@types/qrcode": "^1.5.6",

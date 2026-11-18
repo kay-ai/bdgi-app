@@ -56,6 +56,7 @@ Copy `.env.example` to `.env.local`. Everything has a safe local default. Values
 | `*_PROVIDER` | `console` locally. `PAYMENTS_PROVIDER=paystack` uses Paystack; messaging providers arrive with M8 |
 | `PAYSTACK_SECRET_KEY` | Paystack secret key. Test key (`sk_test_…`) locally and on staging; signs and checks webhooks |
 | `PAYSTACK_ALLOW_LIVE` | `true` only in production secrets. Without it a `sk_live_…` key is refused |
+| `CRON_SECRET` | Long random string. Vercel Cron sends it as `Authorization: Bearer …` to `/api/cron/*`. **Required in production**; locally the jobs run without it |
 
 ### Sign-in
 
@@ -67,6 +68,10 @@ pnpm auth:invite-admin -- --email you@example.org --first Ada --surname Obi
 
 It emails (and prints) a link to set a password; the first sign-in then sets up 2-step and shows ten backup codes once. See DECISIONS.md D-013.
 
+### Scheduled jobs
+
+Vercel Cron calls `/api/cron/messages` (send retries and messages held by quiet hours) and `/api/cron/consent-reminders` (guardian reminders on day 2 and 6, a staff task on day 10). Locally, run one by opening it in the browser, for example `http://localhost:3000/api/cron/consent-reminders`. See DECISIONS.md D-014.
+
 ## Checks
 
 ```bash
@@ -77,7 +82,13 @@ pnpm typecheck
 pnpm test
 ```
 
-The tests include the M3 acceptance checks (`tests/permissions.test.ts` reads the role × action table from spec/03 and checks every cell; `tests/auth.test.ts` covers codes, the profile chooser, staff 2-step and the volunteer student view) and the M2 checks (`tests/donations.test.ts`): they run the Paystack flow against an in-memory database with Paystack's API replaced by a fake, so they need no keys or network.
+The tests include the M3 acceptance checks (`tests/permissions.test.ts` reads the role × action table from spec/03 and checks every cell; `tests/auth.test.ts` covers codes, the profile chooser, staff 2-step and the volunteer student view) and the M2 checks (`tests/donations.test.ts`): they run the Paystack flow against an in-memory database with Paystack's API replaced by a fake, so they need no keys or network. The M4 checks are `tests/join-consent.test.ts` (intake, guardian permission, the five-try lock, withdrawal, duplicates, reminders, quiet hours, STOP) and `tests/messaging-retry.test.ts` (retries and SMS fallback).
+
+```bash
+pnpm test:e2e
+```
+
+Runs the browser journeys in `e2e/` with Playwright on the installed Chrome (`PW_CHANNEL=msedge` for Edge). It starts its own dev server on port 3015 with a fresh database in `.data/pglite-e2e`, so stop nothing first. The intake journey fills the student form at 360 px wide, goes offline from step 2 until just before submit, and must finish in under 3 minutes.
 
 ```bash
 pnpm build
@@ -104,6 +115,7 @@ src/
   server/seed/             seed data (programmes, team, FAQs, templates, redirects)
 scripts/                   migrate, seed, reset, invite-admin
 tests/                     unit tests (vitest)
+e2e/                       browser journeys (Playwright)
 ```
 
 Rules the code follows: pages never query the database directly, only through `src/server/services`. Every write takes a `Ctx` (actor, locale, IP) and writes an `audit_event`. Personal fields are encrypted at rest with lookup hashes for search. Messages are queued inside the same transaction as the change that caused them and sent after it commits, so a rollback never sends a message.
@@ -118,4 +130,7 @@ Built and checked in the browser (1440 and 375 wide):
 
 - Donations (M2): Paystack hosted checkout for one-off and monthly gifts, signed and idempotent webhook, PDF receipts by email, public receipt check, fundraising progress on programme pages, and `/console/donations` (development only until sign-in).
 
-Next milestones (spec/14): M3 sign-in and permissions, then the Hub and the rest of the console.
+- Sign-in and permissions (M3): phone and email codes, staff password + 2-step, profile chooser, spec/03 permission matrix.
+- Join and consent (M4): messaging core with quiet hours, retries and fallback, guardian reminders and staff reissue, scheduled jobs, and the 360 px intake journey in Playwright.
+
+Next milestones (spec/14): M5 onwards, the Hub and the rest of the console.
