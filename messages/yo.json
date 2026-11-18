@@ -144,6 +144,7 @@
     "helpCta": "Kàn sí wa"
   },
   "hub": {
+    "title": "Hub mi",
     "hello": "Ẹ n lẹ, {name}",
     "signOut": "Jáde",
     "toConsole": "Console",

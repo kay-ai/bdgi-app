@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -9,7 +10,10 @@ import { profilesForUser } from "@/server/auth/sessions";
 import { isStaff } from "@/server/permissions/can";
 
 export const dynamic = "force-dynamic";
-export const metadata = { robots: { index: false, follow: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("hub");
+  return { title: t("title"), robots: { index: false, follow: false } };
+}
 
 /** The Hub shell (spec/04): who is signed in, a way to switch profile, sign out. */
 export default async function HubLayout({ children, params }: { children: ReactNode; params: Promise<{ locale: string }> }) {

@@ -134,7 +134,8 @@
     "hub.volunteerTitle",
     "hub.volunteerLead",
     "hub.schoolTitle",
-    "hub.schoolLead"
+    "hub.schoolLead",
+    "hub.title"
   ],
   "englishKeys": 364,
   "missingFromYoruba": 323

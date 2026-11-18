@@ -943,6 +943,7 @@
     "us_deactivated": "Deactivated"
   },
   "hub": {
+    "title": "My Hub",
     "hello": "Hello, {name}",
     "signOut": "Sign out",
     "toConsole": "Console",
