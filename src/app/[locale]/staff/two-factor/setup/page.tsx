@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { SetupForm } from "@/components/auth/StaffForms";
-import { currentSession } from "@/server/auth/current";
+import { currentSession, safeNext, withNext } from "@/server/auth/current";
 import { beginTotpSetup } from "@/server/auth/sign-in";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -12,8 +12,15 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** First staff sign-in: scan the QR code (or type the key), confirm one code, keep the backup codes. */
-export default async function TwoFactorSetupPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function TwoFactorSetupPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ next?: string }>;
+}) {
   const { locale } = await params;
+  const back = safeNext((await searchParams).next, "");
   setRequestLocale(locale);
   const row = await currentSession();
   if (!row || row.session.method !== "staff") redirect("/staff/sign-in");
@@ -21,8 +28,8 @@ export default async function TwoFactorSetupPage({ params }: { params: Promise<{
   const setup = await beginTotpSetup(row);
   if (!setup) {
     // Already on: either finished just now (the form shows backup codes) or a later visit.
-    if (row.session.stage === "full") redirect("/console");
-    redirect("/staff/two-factor");
+    if (row.session.stage === "full") redirect(back || "/console");
+    redirect(withNext("/staff/two-factor", back));
   }
   const svg = await QRCode.toString(setup.uri, { type: "svg", margin: 1, color: { dark: "#1A1712", light: "#FFFFFF" } });
   const key = setup.secret.replace(/(.{4})/g, "$1 ").trim();
@@ -42,7 +49,7 @@ export default async function TwoFactorSetupPage({ params }: { params: Promise<{
           <code className="break-all font-mono text-[17px] tabular">{key}</code>
         </div>
       </div>
-      <SetupForm />
+      <SetupForm next={back || undefined} />
     </>
   );
 }

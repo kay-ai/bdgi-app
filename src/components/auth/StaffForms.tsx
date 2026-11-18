@@ -2,6 +2,7 @@
 
 import { useActionState, useId } from "react";
 import { useTranslations } from "next-intl";
+import NextLink from "next/link";
 import { Link } from "@/i18n/navigation";
 import {
   finishSetupAction,
@@ -82,7 +83,7 @@ export function TwoFactorForm({ next }: { next?: string }) {
   );
 }
 
-export function SetupForm() {
+export function SetupForm({ next }: { next?: string }) {
   const t = useTranslations("staffAuth");
   const id = useId();
   const [state, action, pending] = useActionState<FormState, FormData>(finishSetupAction, null);
@@ -96,9 +97,10 @@ export function SetupForm() {
             <li key={c}>{c}</li>
           ))}
         </ul>
-        <Link href="/console" className="btn btn--lg btn--block">
+        {/* `next` may already carry a locale prefix, so it is a plain link, not the locale-aware one. */}
+        <NextLink href={next ?? "/console"} className="btn btn--lg btn--block">
           {t("savedCodes")}
-        </Link>
+        </NextLink>
       </div>
     );
   }

@@ -2,6 +2,7 @@ import createMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import { redirects } from "./server/seed/data";
+import { PATH_HEADER } from "./server/auth/path-header";
 
 const intl = createMiddleware(routing);
 
@@ -19,6 +20,9 @@ export default function middleware(req: NextRequest) {
     return NextResponse.redirect(url, hit.code);
   }
 
+  // The page asked for, so a sign-in guard in a layout can send the person back to it.
+  // Always overwritten here, so a client cannot supply its own value.
+  req.headers.set(PATH_HEADER, req.nextUrl.pathname + req.nextUrl.search);
   const res = intl(req);
 
   // Campaign source: ?src=CODE is remembered for 30 days (spec/04 §2).

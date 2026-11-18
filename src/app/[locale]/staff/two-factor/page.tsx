@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { TwoFactorForm } from "@/components/auth/StaffForms";
-import { currentSession, safeNext } from "@/server/auth/current";
+import { currentSession, safeNext, withNext } from "@/server/auth/current";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("staffAuth");
@@ -21,14 +21,15 @@ export default async function TwoFactorPage({
   setRequestLocale(locale);
   const row = await currentSession();
   if (!row || row.session.method !== "staff") redirect("/staff/sign-in");
-  if (row.session.stage === "full") redirect("/console");
-  if (!row.user.totpEnabledAt) redirect("/staff/two-factor/setup");
+  const back = safeNext(next, "");
+  if (row.session.stage === "full") redirect(back || "/console");
+  if (!row.user.totpEnabledAt) redirect(withNext("/staff/two-factor/setup", back));
   const t = await getTranslations("staffAuth");
   return (
     <>
       <h1 className="t-h2">{t("twoFactorTitle")}</h1>
       <p className="text-muted">{t("twoFactorLead")}</p>
-      <TwoFactorForm next={safeNext(next, "") || undefined} />
+      <TwoFactorForm next={back || undefined} />
     </>
   );
 }

@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { can, hasRole, isStaff, type Actor, type Role } from "@/server/permissions/can";
 import type { Ctx } from "@/server/services/audit";
+import { PATH_HEADER } from "./path-header";
 import { actorForSession, readSession, revokeSession, SESSION_COOKIE } from "./sessions";
 
 /** Request-level helpers (spec/03 §2). Pages and actions use these; services take the Actor. */
@@ -45,12 +46,23 @@ export function safeNext(next: string | null | undefined, fallback: string) {
   return next && /^\/(?!\/)[\w\-./?=&%]*$/.test(next) && !next.startsWith("/api/") ? next : fallback;
 }
 
-const withNext = (path: string, next?: string) => (next ? `${path}?next=${encodeURIComponent(next)}` : path);
+export const withNext = (path: string, next?: string) => (next ? `${path}?next=${encodeURIComponent(next)}` : path);
+
+/**
+ * Where to come back to after signing in: the page actually requested (set by the middleware),
+ * else the caller's fallback. A layout only knows its own segment, so without this a guard in
+ * `console/layout.tsx` would send everyone back to /console.
+ */
+async function returnPath(fallback?: string) {
+  const here = safeNext((await headers()).get(PATH_HEADER), "");
+  return here || fallback;
+}
 
 /** Signed in with an active person, or off to /sign-in (or the chooser when no profile is picked). */
-export async function requireActor(next?: string): Promise<Actor> {
+export async function requireActor(fallbackNext?: string): Promise<Actor> {
   const actor = await getActor();
   if (actor) return actor;
+  const next = await returnPath(fallbackNext);
   const row = await currentSession();
   if (row?.session.stage === "full" && !row.session.activePersonId) redirect(withNext("/sign-in/who", next));
   redirect(withNext("/sign-in", next));
@@ -63,13 +75,13 @@ export async function requireRole(roles: Role[], next?: string): Promise<Actor> 
 }
 
 /** Staff pages: a full staff session (password and 2-step) and a staff role. */
-export async function requireStaff(next?: string): Promise<Actor> {
+export async function requireStaff(fallbackNext?: string): Promise<Actor> {
   const row = await currentSession();
   if (row?.session.method === "staff" && row.session.stage === "password") {
-    redirect(row.user.totpEnabledAt ? "/staff/two-factor" : "/staff/two-factor/setup");
+    redirect(withNext(row.user.totpEnabledAt ? "/staff/two-factor" : "/staff/two-factor/setup", await returnPath(fallbackNext)));
   }
   const actor = await actorForSession(row);
-  if (!actor || row?.session.method !== "staff") redirect(withNext("/staff/sign-in", next));
+  if (!actor || row?.session.method !== "staff") redirect(withNext("/staff/sign-in", await returnPath(fallbackNext)));
   if (!isStaff(actor)) redirect("/sign-in/no-access");
   return actor;
 }
