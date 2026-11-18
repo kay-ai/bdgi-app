@@ -23,7 +23,9 @@ const consoleProvider = (channel: string): MessageProvider => ({
     const files = attachments?.length
       ? `\n  attached: ${attachments.map((a) => `${a.filename} (${a.content.byteLength} bytes)`).join(", ")}`
       : "";
-    console.info(`[${channel}] to ${masked}${subject ? ` · ${subject}` : ""}\n  ${body}${files}`);
+    // In production the console adapter never prints bodies: they can hold sign-in codes and links.
+    const shown = process.env.NODE_ENV === "production" ? "(body not logged in production)" : body;
+    console.info(`[${channel}] to ${masked}${subject ? ` · ${subject}` : ""}\n  ${shown}${files}`);
     if (process.env.NODE_ENV !== "production") {
       consoleOutbox.push({ channel, to, body, subject, attachments });
       if (consoleOutbox.length > 50) consoleOutbox.shift();

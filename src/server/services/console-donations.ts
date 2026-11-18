@@ -4,7 +4,8 @@ import { db, schema as s } from "@/db";
 import { decrypt, encrypt, humanCode, lookupHash } from "@/lib/crypto";
 import type { DonationFilters, OfflineGiftInput } from "@/server/validation/donation";
 import { audit, type Ctx } from "./audit";
-import { consoleCtx } from "./console-access";
+import { assertCan } from "@/server/permissions/assert";
+import type { Actor } from "@/server/permissions/can";
 import { dispatch, queueTemplate } from "./messaging";
 import { receiptMessage } from "./receipts";
 
@@ -63,8 +64,8 @@ function listQuery(f: Partial<DonationFilters>) {
 
 export type DonationRow = Awaited<ReturnType<typeof listQuery>>[number];
 
-export async function listDonations(filters: DonationFilters) {
-  consoleCtx("donation.view");
+export async function listDonations(actor: Actor | null, filters: DonationFilters) {
+  assertCan(actor, "donation.view");
   const page = filters.page ?? 1;
   const [rows, [total]] = await Promise.all([
     listQuery(filters).limit(PAGE_SIZE).offset((page - 1) * PAGE_SIZE),
@@ -78,8 +79,8 @@ const toMoney = (rows: { currency: Currency; total: number | string }[]): Money 
   Object.fromEntries(rows.map((r) => [r.currency, Number(r.total)]));
 
 /** Totals for the top of the page (spec/11 §3). Paid gifts only; currencies kept apart. */
-export async function donationTotals(now = new Date()) {
-  consoleCtx("donation.view");
+export async function donationTotals(actor: Actor | null, now = new Date()) {
+  assertCan(actor, "donation.view");
   const paid = eq(s.donation.status, "paid");
   const total = sql<string>`coalesce(sum(${s.donation.amountMinor}), 0)`;
   const sumSince = (since: Date) =>
@@ -145,8 +146,8 @@ const csvCell = (v: unknown) => {
 };
 
 /** CSV export of the filtered list. No email or phone (spec/03 §4.2); logged as `export.create`. */
-export async function exportDonationsCsv(filters: DonationFilters, ip?: string | null) {
-  const ctx = consoleCtx("donation.view", { ip });
+export async function exportDonationsCsv(actor: Actor | null, filters: DonationFilters, ip?: string | null) {
+  const ctx = assertCan(actor, "donation.view", { ip });
   const rows = await listQuery(filters);
   const header = ["date", "paid_at", "reference", "supporter", "amount", "currency", "frequency", "designation", "status", "provider", "campaign"];
   const lines = [header.join(",")];
@@ -162,8 +163,8 @@ export async function exportDonationsCsv(filters: DonationFilters, ip?: string |
   return lines.join("\r\n") + "\r\n";
 }
 
-export async function getSupporter(id: string) {
-  consoleCtx("donation.view");
+export async function getSupporter(actor: Actor | null, id: string) {
+  assertCan(actor, "donation.view");
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const [sup] = await db.select().from(s.supporter).where(eq(s.supporter.id, id));
   if (!sup) return null;
@@ -190,8 +191,8 @@ export async function getSupporter(id: string) {
   };
 }
 
-export async function saveSupporterNotes(id: string, notes: string, ip?: string | null) {
-  const ctx = consoleCtx("donation.manage", { ip });
+export async function saveSupporterNotes(actor: Actor | null, id: string, notes: string, ip?: string | null) {
+  const ctx = assertCan(actor, "donation.manage", { ip });
   const [row] = await db
     .update(s.supporter)
     .set({ notes: notes.trim().slice(0, 2000) || null, updatedAt: new Date() })
@@ -203,8 +204,8 @@ export async function saveSupporterNotes(id: string, notes: string, ip?: string 
 }
 
 /** Send the receipt again (a new message row each time; the original stays as sent). */
-export async function resendReceipt(donationId: string, ip?: string | null) {
-  const ctx = consoleCtx("donation.manage", { ip });
+export async function resendReceipt(actor: Actor | null, donationId: string, ip?: string | null) {
+  const ctx = assertCan(actor, "donation.manage", { ip });
   const r = await receiptMessage(db, donationId);
   if (!r) return { ok: false as const, code: "not_paid" };
   const id = await queueTemplate({
@@ -220,8 +221,8 @@ export async function resendReceipt(donationId: string, ip?: string | null) {
 }
 
 /** Bank transfer or cash (spec/11 §3): status `paid`, provider `offline`, receipt emailed. */
-export async function recordOfflineGift(input: OfflineGiftInput, ip?: string | null) {
-  const ctx: Ctx = consoleCtx("donation.manage", { ip });
+export async function recordOfflineGift(actor: Actor | null, input: OfflineGiftInput, ip?: string | null) {
+  const ctx: Ctx = assertCan(actor, "donation.manage", { ip });
   const reference = `BGDI-${humanCode(10)}`;
   const ids: string[] = [];
   const donationId = await db.transaction(async (tx) => {
@@ -263,8 +264,8 @@ export async function recordOfflineGift(input: OfflineGiftInput, ip?: string | n
 }
 
 /** After refunding in Paystack's dashboard, record it here. The receipt check then shows "refunded". */
-export async function markRefunded(donationId: string, note: string, ip?: string | null) {
-  const ctx = consoleCtx("donation.manage", { ip });
+export async function markRefunded(actor: Actor | null, donationId: string, note: string, ip?: string | null) {
+  const ctx = assertCan(actor, "donation.manage", { ip });
   const [d] = await db
     .update(s.donation)
     .set({ status: "refunded", updatedAt: new Date() })

@@ -2,12 +2,12 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { OfflineGiftForm } from "@/components/console/OfflineGiftForm";
 import { designatedProgrammes } from "@/server/services/console-donations";
-import { consoleCtx } from "@/server/services/console-access";
+import { requirePermission } from "@/server/auth/current";
 
 export default async function NewOfflineGift({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  consoleCtx("donation.manage");
+  await requirePermission("donation.manage", "/console/donations/new");
   const t = await getTranslations("console");
   const programmes = await designatedProgrammes();
   return (

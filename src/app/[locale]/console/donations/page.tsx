@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { formatDate, money } from "@/lib/format";
 import { designatedProgrammes, donationTotals, listDonations } from "@/server/services/console-donations";
+import { requirePermission } from "@/server/auth/current";
 import { donationFilters } from "@/server/validation/donation";
 
 type Search = Record<string, string | string[] | undefined>;
@@ -12,11 +13,12 @@ const pairs = (m: Partial<Record<string, number>>) => (["NGN", "USD"] as const).
 export default async function DonationsPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<Search> }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const actor = await requirePermission("donation.view", "/console/donations");
   const t = await getTranslations("console");
   const sp = await searchParams;
   const flat = Object.fromEntries(Object.entries(sp).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]).filter(([, v]) => v));
   const filters = donationFilters.parse(flat);
-  const [list, totals, programmes] = await Promise.all([listDonations(filters), donationTotals(), designatedProgrammes()]);
+  const [list, totals, programmes] = await Promise.all([listDonations(actor, filters), donationTotals(actor), designatedProgrammes()]);
 
   const qs = (over: Record<string, string | number | undefined>) => {
     const q = new URLSearchParams();

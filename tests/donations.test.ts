@@ -14,7 +14,8 @@ import {
   recordOfflineGift,
   resendReceipt,
 } from "@/server/services/console-donations";
-import { ConsoleDenied } from "@/server/services/console-access";
+import { Forbidden } from "@/server/permissions/assert";
+import type { Actor } from "@/server/permissions/can";
 import { verifyReceipt } from "@/server/services/receipts";
 import { donationFilters, donationInput, type DonationInput } from "@/server/validation/donation";
 import { POST as webhook } from "@/app/api/webhooks/paystack/route";
@@ -27,6 +28,18 @@ import { setupDb } from "./support/db";
  */
 const SECRET = `sk_test_${randomBytes(20).toString("hex")}`;
 const ctx = { actor: null, locale: "en" as const, ip: null };
+/** A signed-in admin, as the console would pass after requireStaff (M3). */
+const admin: Actor = {
+  userId: "00000000-0000-7000-8000-000000000001",
+  personId: "00000000-0000-7000-8000-000000000002",
+  firstName: "Admin",
+  roles: [{ role: "admin", stateId: null }],
+  childIds: [],
+  coachCohortIds: [],
+  championSchoolIds: [],
+};
+/** A volunteer has no donation rights. */
+const volunteer: Actor = { ...admin, roles: [{ role: "volunteer", stateId: null }] };
 
 type Call = { url: string; method: string; body: Record<string, unknown> | null };
 let calls: Call[] = [];
@@ -96,6 +109,11 @@ async function countRows() {
 
 beforeAll(async () => {
   await setupDb();
+  // The admin acting in the console tests is a real person, so audit rows can point at them.
+  await db
+    .insert(s.person)
+    .values({ id: admin.personId, firstName: "Admin", surname: "-", gender: "prefer_not_to_say", status: "active" })
+    .onConflictDoNothing();
 });
 
 beforeEach(() => {
@@ -169,12 +187,12 @@ describe("M2: a test-mode NGN donation", () => {
     expect(Buffer.from(pdf.content.slice(0, 5)).toString("latin1")).toBe("%PDF-");
 
     // Console: in the list, in the totals, on the supporter page.
-    const list = await listDonations(donationFilters.parse({ status: "paid", provider: "paystack" }));
+    const list = await listDonations(admin, donationFilters.parse({ status: "paid", provider: "paystack" }));
     const listed = list.rows.find((r) => r.reference === started.reference);
     expect(listed).toMatchObject({ amountMinor: 500000, currency: "NGN", frequency: "one_off", status: "paid", supporterName: "Test Donor" });
-    const totals = await donationTotals(new Date("2026-11-20T12:00:00Z"));
+    const totals = await donationTotals(admin, new Date("2026-11-20T12:00:00Z"));
     expect(totals.month.NGN).toBeGreaterThanOrEqual(500000);
-    const sup = await getSupporter(listed!.supporterId);
+    const sup = await getSupporter(admin, listed!.supporterId);
     expect(sup?.email).toBe(input.email);
     expect(sup?.wantsUpdates).toBe(true);
     expect(sup?.gifts.map((g) => g.reference)).toContain(started.reference);
@@ -332,7 +350,7 @@ describe("console payments provider", () => {
 describe("console donations", () => {
   it("records an offline gift with a receipt, resends it, and marks a refund", async () => {
     const before = consoleOutbox.length;
-    const r = await recordOfflineGift({
+    const r = await recordOfflineGift(admin, {
       supporterName: "Offline Giver",
       supporterEmail: "offline@example.test",
       amount: 100000,
@@ -346,11 +364,11 @@ describe("console donations", () => {
     expect(consoleOutbox.length).toBe(before + 1);
     expect(consoleOutbox.at(-1)!.attachments?.[0]?.contentType).toBe("application/pdf");
 
-    expect((await resendReceipt(r.donationId)).ok).toBe(true);
+    expect((await resendReceipt(admin, r.donationId)).ok).toBe(true);
     expect(consoleOutbox.length).toBe(before + 2);
 
-    expect((await markRefunded(r.donationId, "Refunded at donor's request")).ok).toBe(true);
-    expect((await markRefunded(r.donationId, "again")).ok).toBe(false);
+    expect((await markRefunded(admin, r.donationId, "Refunded at donor's request")).ok).toBe(true);
+    expect((await markRefunded(admin, r.donationId, "again")).ok).toBe(false);
     const [d] = await db.select().from(s.donation).where(eq(s.donation.id, r.donationId));
     expect(d!.status).toBe("refunded");
     expect(await verifyReceipt(d!.receiptCode!)).toMatchObject({ valid: false, refunded: true });
@@ -362,17 +380,17 @@ describe("console donations", () => {
   });
 
   it("exports CSV without contact details and logs the export", async () => {
-    const csv = await exportDonationsCsv(donationFilters.parse({}));
+    const csv = await exportDonationsCsv(admin, donationFilters.parse({}));
     expect(csv.split("\r\n")[0]).toBe("date,paid_at,reference,supporter,amount,currency,frequency,designation,status,provider,campaign");
     expect(csv).not.toContain("@example.test");
     const [e] = await db.select({ n: count() }).from(s.auditEvent).where(eq(s.auditEvent.action, "export.create"));
     expect(e!.n).toBeGreaterThan(0);
   });
 
-  it("is closed in production until sign-in (M3) exists", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-    await expect(listDonations(donationFilters.parse({}))).rejects.toBeInstanceOf(ConsoleDenied);
-    await expect(donationTotals()).rejects.toBeInstanceOf(ConsoleDenied);
-    await expect(exportDonationsCsv(donationFilters.parse({}))).rejects.toBeInstanceOf(ConsoleDenied);
+  it("refuses an actor without donation rights, and no one at all", async () => {
+    await expect(listDonations(volunteer, donationFilters.parse({}))).rejects.toBeInstanceOf(Forbidden);
+    await expect(donationTotals(volunteer)).rejects.toBeInstanceOf(Forbidden);
+    await expect(exportDonationsCsv(volunteer, donationFilters.parse({}))).rejects.toBeInstanceOf(Forbidden);
+    await expect(listDonations(null, donationFilters.parse({}))).rejects.toBeInstanceOf(Forbidden);
   });
 });

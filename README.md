@@ -42,7 +42,7 @@ Messages (WhatsApp, SMS, email) and payments use **console providers** by defaul
 2. Set the test webhook URL to `{APP_URL}/api/webhooks/paystack`. Paystack cannot reach `localhost`, so locally use a tunnel (for example `cloudflared tunnel --url http://localhost:3001`) and set `APP_URL` to the tunnel address. Without a webhook the thank-you page still confirms the payment by asking Paystack.
 3. Pay with one of Paystack's published test cards. Never use real card details or live keys outside production.
 
-Staff see gifts at `/console/donations` (local only until sign-in, see DECISIONS.md D-012): totals, filters, CSV export, supporter pages, receipt PDFs, resend receipt, record an offline gift, mark refunded. Anyone can check a receipt at `/verify/receipt/[code]`.
+Staff (programme managers and admins) see gifts at `/console/donations`: totals, filters, CSV export, supporter pages, receipt PDFs, resend receipt, record an offline gift, mark refunded. Anyone can check a receipt at `/verify/receipt/[code]`.
 
 ### Environment
 
@@ -56,7 +56,16 @@ Copy `.env.example` to `.env.local`. Everything has a safe local default. Values
 | `*_PROVIDER` | `console` locally. `PAYMENTS_PROVIDER=paystack` uses Paystack; messaging providers arrive with M8 |
 | `PAYSTACK_SECRET_KEY` | Paystack secret key. Test key (`sk_test_…`) locally and on staging; signs and checks webhooks |
 | `PAYSTACK_ALLOW_LIVE` | `true` only in production secrets. Without it a `sk_live_…` key is refused |
-| `CONSOLE_DEV_ACCESS` | The console has no sign-in until M3, so it is open only outside production. `off` closes it locally too |
+
+### Sign-in
+
+Students, guardians, volunteers and champions sign in at `/sign-in` with a code sent to their phone (or email). Locally the console provider prints the code in the terminal. Staff sign in at `/staff/sign-in` with a password and a 2-step code from an authenticator app. There is no staff sign-up: create the first admin once, then invite everyone else from `/console/admin/users`.
+
+```bash
+pnpm auth:invite-admin -- --email you@example.org --first Ada --surname Obi
+```
+
+It emails (and prints) a link to set a password; the first sign-in then sets up 2-step and shows ten backup codes once. See DECISIONS.md D-013.
 
 ## Checks
 
@@ -68,7 +77,7 @@ pnpm typecheck
 pnpm test
 ```
 
-The tests include the M2 acceptance checks (`tests/donations.test.ts`): they run the Paystack flow against an in-memory database with Paystack's API replaced by a fake, so they need no keys or network.
+The tests include the M3 acceptance checks (`tests/permissions.test.ts` reads the role × action table from spec/03 and checks every cell; `tests/auth.test.ts` covers codes, the profile chooser, staff 2-step and the volunteer student view) and the M2 checks (`tests/donations.test.ts`): they run the Paystack flow against an in-memory database with Paystack's API replaced by a fake, so they need no keys or network.
 
 ```bash
 pnpm build
@@ -90,8 +99,10 @@ src/
   lib/                     phone numbers, encryption, formatting
   offline/                 Dexie store for intake drafts and the offline queue
   server/services/         all reads and writes; every write is audited
+  server/auth/             sessions, codes, staff password + 2-step, invites
+  server/permissions/      can(), the spec/03 matrix, SQL scopes
   server/seed/             seed data (programmes, team, FAQs, templates, redirects)
-scripts/                   migrate, seed, reset
+scripts/                   migrate, seed, reset, invite-admin
 tests/                     unit tests (vitest)
 ```
 

@@ -25,6 +25,8 @@ export async function queueTemplate(input: {
   vars: Record<string, string | number>;
   eventKey: string;
   language?: "en" | "yo";
+  /** false for secrets (sign-in codes, links): the body stays encrypted, the variables are not stored. */
+  storeVars?: boolean;
 }, exec: Exec = db): Promise<string | null> {
   const [tpl] = await exec.select().from(s.messageTemplate).where(eq(s.messageTemplate.key, input.templateKey));
   if (!tpl) throw new Error(`Unknown template ${input.templateKey}`);
@@ -52,7 +54,7 @@ export async function queueTemplate(input: {
       toAddress: encrypt(input.to),
       channel,
       templateKey: tpl.key,
-      variables: input.vars,
+      variables: input.storeVars === false ? {} : input.vars,
       bodyRendered: encrypt(body),
       status: opt && tpl.category !== "authentication" ? "skipped" : "queued",
       eventKey: input.eventKey,

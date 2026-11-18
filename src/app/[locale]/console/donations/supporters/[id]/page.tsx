@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { formatDate, money } from "@/lib/format";
 import { getSupporter } from "@/server/services/console-donations";
+import { requirePermission } from "@/server/auth/current";
 import { GiftActions, SupporterNotes } from "@/components/console/DonationActions";
 
 /** Supporter page (spec/11 §3): contact, gifts, totals, notes, "wants updates". */
@@ -10,7 +11,8 @@ export default async function SupporterPage({ params }: { params: Promise<{ loca
   const { locale, id } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("console");
-  const sup = await getSupporter(id);
+  const actor = await requirePermission("donation.view", `/console/donations/supporters/${id}`);
+  const sup = await getSupporter(actor, id);
   if (!sup) notFound();
   const totals = (["NGN", "USD"] as const).filter((c) => sup.totals[c]).map((c) => money(sup.totals[c]!, c));
 
