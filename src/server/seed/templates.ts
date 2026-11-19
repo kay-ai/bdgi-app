@@ -8,7 +8,7 @@ export const messageTemplates = [
       "sms",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your BGDI sign-in code",
     "bodyEn": "Your BGDI code is {{code}}. It expires in 10 minutes. Don't share it.",
     "variables": [
       "code"
@@ -22,9 +22,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Welcome to the Dream",
     "bodyEn": "Hi {{firstName}}! Thank you for joining the Dream. We've asked {{guardianName}} for permission. We'll message you once you're placed in a group.",
     "variables": [
       "firstName",
@@ -39,9 +40,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your permission for BGDI",
     "bodyEn": "Hello {{guardianName}}. {{studentFirstName}} would like to join Black Girl's Dream Initiative, a free programme at {{schoolName}}. Please give your permission here: {{link}} Your code is {{code}}. Questions? Call {{orgPhone}}.",
     "variables": [
       "guardianName",
@@ -60,9 +62,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Reminder: your permission for BGDI",
     "bodyEn": "Reminder: {{studentFirstName}} is waiting for your permission to join BGDI. {{link}} Code: {{code}}",
     "variables": [
       "studentFirstName",
@@ -78,9 +81,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Thank you for your permission",
     "bodyEn": "Thank you. {{studentFirstName}} can now take part in BGDI. You can change your choices any time: {{link}}",
     "variables": [
       "studentFirstName",
@@ -95,9 +99,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "We have your answer",
     "bodyEn": "We've recorded that you do not give permission for {{studentFirstName}}. We will not contact her further. If this was a mistake: {{link}}",
     "variables": [
       "studentFirstName",
@@ -112,9 +117,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "BGDI at your child's school",
     "bodyEn": "Hello. {{schoolName}} has enrolled {{studentFirstName}} in BGDI's {{programmeName}}, a free school activity. Learn more or opt out: {{link}}",
     "variables": [
       "schoolName",
@@ -131,9 +137,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Permission withdrawn",
     "bodyEn": "We've recorded that you have withdrawn permission for {{studentFirstName}}. She has been removed from BGDI activities.",
     "variables": [
       "studentFirstName"
@@ -147,9 +154,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "You can start BGDI",
     "bodyEn": "Good news, {{firstName}}! {{guardianName}} said yes. We're finding your group now.",
     "variables": [
       "firstName",
@@ -164,9 +172,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your BGDI group",
     "bodyEn": "{{firstName}} is in! Group: {{cohortName}}. First session: {{date}} at {{time}}, {{venue}}. Coach: {{coachName}}.",
     "variables": [
       "firstName",
@@ -185,9 +194,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "You are on the BGDI waiting list",
     "bodyEn": "{{firstName}} is on our waiting list for {{programmeName}} at {{schoolName}}. We'll message you as soon as a group opens.",
     "variables": [
       "firstName",
@@ -203,9 +213,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "About your BGDI sign-up",
     "bodyEn": "Thank you for {{firstName}}'s interest in BGDI. We can't offer a place right now: {{reason}}. We'll keep in touch about future programmes.",
     "variables": [
       "firstName",
@@ -220,9 +231,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your BGDI session is coming up",
     "bodyEn": "Reminder: {{programmeName}} {{when}} at {{time}}, {{venue}}. See you there!",
     "variables": [
       "programmeName",
@@ -239,9 +251,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "BGDI session cancelled",
     "bodyEn": "{{programmeName}} on {{date}} is cancelled: {{reason}}. Next session: {{nextDate}}.",
     "variables": [
       "programmeName",
@@ -258,9 +271,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "BGDI session moved",
     "bodyEn": "{{programmeName}} has moved to {{date}} at {{time}}, {{venue}}.",
     "variables": [
       "programmeName",
@@ -277,9 +291,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "We miss you at BGDI",
     "bodyEn": "We've missed {{firstName}} at the last {{count}} sessions of {{programmeName}}. Is everything okay? Reply to this message or call {{orgPhone}}.",
     "variables": [
       "firstName",
@@ -296,9 +311,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "How did BGDI go for you?",
     "bodyEn": "You did it, {{firstName}}! Take 2 minutes to tell us how you feel now: {{link}}",
     "variables": [
       "firstName",
@@ -313,9 +329,10 @@ export const messageTemplates = [
     "category": "utility",
     "channels": [
       "whatsapp",
-      "sms"
+      "sms",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "You finished the programme",
     "bodyEn": "Congratulations! {{firstName}} has completed {{programmeName}}. Certificate: {{link}}",
     "variables": [
       "firstName",
@@ -334,7 +351,7 @@ export const messageTemplates = [
       "sms",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "We have your volunteer application",
     "bodyEn": "Thank you for applying to volunteer with BGDI, {{firstName}}. Next we'll contact your references. Track your application: {{link}}",
     "variables": [
       "firstName",
@@ -351,7 +368,7 @@ export const messageTemplates = [
       "whatsapp",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "BGDI volunteer interview",
     "bodyEn": "Hi {{firstName}}, your references are in. We'd like a short call. Please pick a time: {{link}}",
     "variables": [
       "firstName",
@@ -368,7 +385,7 @@ export const messageTemplates = [
       "whatsapp",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "BGDI volunteer training",
     "bodyEn": "Welcome aboard, {{firstName}}! One last step: complete your safeguarding training (about 30 minutes): {{link}}",
     "variables": [
       "firstName",
@@ -385,7 +402,7 @@ export const messageTemplates = [
       "whatsapp",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "You are a BGDI volunteer",
     "bodyEn": "You're now an active BGDI volunteer. We'll message you when you're matched to a school. Your Hub: {{link}}",
     "variables": [
       "link"
@@ -401,7 +418,7 @@ export const messageTemplates = [
       "whatsapp",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your BGDI group",
     "bodyEn": "You've been matched to {{cohortName}} at {{schoolName}} as {{role}}. First session: {{date}} {{time}}. Details: {{link}}",
     "variables": [
       "cohortName",
@@ -421,7 +438,7 @@ export const messageTemplates = [
     "channels": [
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "About your volunteer application",
     "bodyEn": "Thank you for your interest in volunteering with BGDI. We're unable to take your application forward at this time.",
     "variables": [],
     "allowBeforeConsent": true,
@@ -432,9 +449,10 @@ export const messageTemplates = [
     "key": "volunteer.attendance_due",
     "category": "utility",
     "channels": [
-      "whatsapp"
+      "whatsapp",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Please mark attendance",
     "bodyEn": "Please take attendance for {{cohortName}} on {{date}}: {{link}}",
     "variables": [
       "cohortName",
@@ -452,7 +470,7 @@ export const messageTemplates = [
       "whatsapp",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your BGDI group has finished",
     "bodyEn": "{{cohortName}} is complete. Thank you! You logged {{hours}} hours. Certificate: {{link}}",
     "variables": [
       "cohortName",
@@ -467,9 +485,10 @@ export const messageTemplates = [
     "key": "volunteer.hours_decision",
     "category": "utility",
     "channels": [
-      "whatsapp"
+      "whatsapp",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your volunteer hours",
     "bodyEn": "Your {{hours}} hours on {{date}} were {{decision}}.",
     "variables": [
       "hours",
@@ -487,7 +506,7 @@ export const messageTemplates = [
       "whatsapp",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your BGDI certificate is ready",
     "bodyEn": "Your BGDI certificate is ready: {{link}}",
     "variables": [
       "link"
@@ -504,7 +523,7 @@ export const messageTemplates = [
       "sms",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "We have your school request",
     "bodyEn": "Thank you, {{name}}. We've received {{schoolName}}'s request. A member of our team will call you within 5 working days.",
     "variables": [
       "name",
@@ -521,7 +540,7 @@ export const messageTemplates = [
       "whatsapp",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your school is joining BGDI",
     "bodyEn": "Great news! BGDI would love to work with {{schoolName}}. Please review and sign the agreement: {{link}}",
     "variables": [
       "schoolName",
@@ -539,7 +558,7 @@ export const messageTemplates = [
       "sms",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "You are registered",
     "bodyEn": "You're registered for {{eventTitle}} on {{date}} at {{venue}}. {{link}}",
     "variables": [
       "eventTitle",
@@ -559,7 +578,7 @@ export const messageTemplates = [
       "sms",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your BGDI event is coming up",
     "bodyEn": "Reminder: {{eventTitle}} is tomorrow at {{time}}, {{venue}}.",
     "variables": [
       "eventTitle",
@@ -597,7 +616,7 @@ export const messageTemplates = [
     "channels": [
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your gift did not go through",
     "bodyEn": "Your donation didn't go through. You can try again here: {{link}}",
     "variables": [
       "link"
@@ -612,7 +631,7 @@ export const messageTemplates = [
     "channels": [
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "We have your message",
     "bodyEn": "Thank you for contacting BGDI. We've received your message and will reply within 3 working days.",
     "variables": [],
     "allowBeforeConsent": true,
@@ -625,7 +644,7 @@ export const messageTemplates = [
     "channels": [
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Please confirm your subscription",
     "bodyEn": "Please confirm your subscription: {{link}}",
     "variables": [
       "link"
@@ -640,7 +659,7 @@ export const messageTemplates = [
     "channels": [
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "You are invited to the BGDI console",
     "bodyEn": "You've been invited to the BGDI Hub as {{roles}}. Set your password: {{link}} (valid 72 hours)",
     "variables": [
       "roles",
@@ -700,7 +719,7 @@ export const messageTemplates = [
     "channels": [
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your BGDI daily summary",
     "bodyEn": "Daily list of open tasks and inbox counts",
     "variables": [],
     "allowBeforeConsent": true,
@@ -715,7 +734,7 @@ export const messageTemplates = [
       "sms",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "New case for you",
     "bodyEn": "New safeguarding concern {{reference}} ({{severity}}). Sign in to review: {{link}}",
     "variables": [
       "reference",
@@ -734,7 +753,7 @@ export const messageTemplates = [
       "sms",
       "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "We have your concern",
     "bodyEn": "Thank you for telling us. Your reference is {{reference}}. Our safeguarding lead will review it. If someone is in immediate danger, call 112.",
     "variables": [
       "reference"
@@ -790,9 +809,10 @@ export const messageTemplates = [
     "key": "speech.result",
     "category": "utility",
     "channels": [
-      "whatsapp"
+      "whatsapp",
+      "email"
     ],
-    "subjectEn": null,
+    "subjectEn": "Your speech practice result",
     "bodyEn": "Here's your scorecard, {{firstName}}! {{stars}} Pace: {{wpm}} wpm. Fillers: {{fillers}}. Well done: {{strength}} Next time: {{nextStep}} Full feedback: {{link}}",
     "variables": [
       "firstName",

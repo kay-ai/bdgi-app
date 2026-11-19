@@ -500,6 +500,9 @@
       },
       "language": "Language I prefer",
       "phone": "My phone number",
+      "email": "My email address",
+      "emailHint": "We will send you updates about your programme here.",
+      "emailHintAdult": "We will send your sign-in codes and programme updates here.",
       "guardianName": "Parent or guardian's name",
       "guardianRelationship": "Their relationship to me",
       "relationships": {
@@ -513,6 +516,8 @@
       },
       "guardianPhone": "Their phone number",
       "guardianPhoneHint": "We'll send them a message to ask their permission.",
+      "guardianEmail": "Their email address",
+      "guardianEmailHint": "We will email them to ask their permission.",
       "guardianChannel": "Best way to reach them",
       "avatar": "Pick your picture",
       "checkinLead": "There are no wrong answers.",
@@ -554,7 +559,9 @@
       "privacy": "Please agree to the privacy notice to continue.",
       "tooFast": "That was very quick. Please check your answers and send again.",
       "server": "Something went wrong on our side. Your answers are saved. Try again.",
-      "rateLimited": "Too many sign-ups from this connection. Please wait an hour and try again."
+      "rateLimited": "Too many sign-ups from this connection. Please wait an hour and try again.",
+      "email": "That email address does not look right. Try name@example.com.",
+      "sameEmail": "Your email and your guardian's email are the same. Leave yours blank, or choose “A shared family smartphone” in step 3."
     }
   },
   "consent": {
@@ -563,8 +570,8 @@
     "programme": "{studentFirstName} has asked to join {programme}: {summary}",
     "collectTitle": "What we keep and who sees it",
     "collect1": "Her first name, surname, age, class and school, and the answers she gave when she signed up.",
-    "collect2": "Your name and phone number, so we can reach you.",
-    "collect3": "Volunteers see only her first name, class and school. They never see phone numbers.",
+    "collect2": "Your name and your email or phone number, so we can reach you.",
+    "collect3": "Volunteers see only her first name, class and school. They never see email addresses or phone numbers.",
     "collect4": "You can ask us to delete her information at any time.",
     "choicesTitle": "Your choices",
     "participation": "I give permission for {name} to take part.",
@@ -787,11 +794,12 @@
     "phoneLabel": "Phone number",
     "phoneHint": "The number you gave when you joined. We send the code by WhatsApp or SMS.",
     "emailLabel": "Email address",
-    "emailHint": "The email you gave when you applied.",
+    "emailHint": "The email you, or your parent, gave when you joined.",
     "sendCode": "Send code",
     "sending": "Sending…",
     "useEmail": "Use email instead",
     "usePhone": "Use phone instead",
+    "otherEmail": "Use a different email",
     "errPhone": "Enter a Nigerian mobile number, like 0803 123 4567.",
     "errEmail": "Enter an email address, like name@example.com.",
     "errRateLimited": "Too many tries. Please wait an hour and try again.",
@@ -822,7 +830,8 @@
     "staff": "BGDI staff?",
     "staffCta": "Staff sign-in",
     "help": "Need help?",
-    "helpCta": "Contact us"
+    "helpCta": "Contact us",
+    "leadEmail": "We will send a six-digit code to the email you gave when you joined."
   },
   "console": {
     "title": "BGDI console",

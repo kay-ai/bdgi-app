@@ -1,9 +1,10 @@
 import "server-only";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db, schema as s } from "@/db";
-import { decrypt, encrypt, lookupHash, secureCompare } from "@/lib/crypto";
+import { encrypt, lookupHash, secureCompare } from "@/lib/crypto";
 import { audit, type Ctx } from "./audit";
 import { dispatch, queueTemplate } from "./messaging";
+import { reach } from "./reach";
 
 const MAX_ATTEMPTS = 5;
 const OPTIONAL = ["photo", "ai_practice", "stories"] as const;
@@ -79,7 +80,7 @@ export async function decide(ctx: Ctx, d: Decision) {
   const now = new Date();
   const ids: string[] = [];
   const link = `${process.env.APP_URL ?? "http://localhost:3000"}/consent/${d.token}`;
-  const to = decrypt(guardian.phone);
+  const g = reach(guardian);
 
   await db.transaction(async (tx) => {
     if (d.give) {
@@ -123,12 +124,12 @@ export async function decide(ctx: Ctx, d: Decision) {
       if (first && student.status === "pending_consent") {
         await tx.update(s.person).set({ status: "pending_review", updatedAt: now }).where(eq(s.person.id, student.id));
       }
-      if (first && to) {
+      if (first && g) {
         const id = await queueTemplate(
           {
             templateKey: "consent.thanks",
-            to,
-            channel: guardian.preferredChannel,
+            to: g.to,
+            channel: g.channel,
             personId: guardian.id,
             vars: { studentFirstName: student.firstName, link },
             eventKey: `consent.thanks:${req.id}`,
@@ -137,12 +138,13 @@ export async function decide(ctx: Ctx, d: Decision) {
         );
         if (id) ids.push(id);
       }
-      if (first && student.phone) {
+      const st = first ? reach(student) : null;
+      if (st) {
         const id = await queueTemplate(
           {
             templateKey: "student.consent_given",
-            to: decrypt(student.phone),
-            channel: student.preferredChannel,
+            to: st.to,
+            channel: st.channel,
             personId: student.id,
             vars: { firstName: student.firstName, guardianName: guardian.firstName },
             eventKey: `student.consent_given:${req.id}`,
@@ -171,12 +173,12 @@ export async function decide(ctx: Ctx, d: Decision) {
           dedupeKey: `consent_declined:${student.id}`,
         })
         .onConflictDoNothing({ target: s.task.dedupeKey });
-      if (to) {
+      if (g) {
         const id = await queueTemplate(
           {
             templateKey: "consent.declined_ack",
-            to,
-            channel: guardian.preferredChannel,
+            to: g.to,
+            channel: g.channel,
             personId: guardian.id,
             vars: { studentFirstName: student.firstName, link },
             eventKey: `consent.declined_ack:${req.id}`,
@@ -216,12 +218,13 @@ export async function withdraw(ctx: Ctx, token: string, code: string) {
       .update(s.cohortMember)
       .set({ leftOn: now.toISOString().slice(0, 10), leftReason: "consent_withdrawn", updatedAt: now })
       .where(and(eq(s.cohortMember.personId, student.id), isNull(s.cohortMember.leftOn)));
-    if (guardian.phone) {
+    const gw = reach(guardian);
+    if (gw) {
       const id = await queueTemplate(
         {
           templateKey: "consent.withdrawn",
-          to: decrypt(guardian.phone),
-          channel: guardian.preferredChannel,
+          to: gw.to,
+          channel: gw.channel,
           personId: guardian.id,
           vars: { studentFirstName: student.firstName },
           eventKey: `consent.withdrawn:${req.id}`,

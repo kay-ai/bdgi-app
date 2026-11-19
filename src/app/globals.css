@@ -248,18 +248,6 @@ a:hover .frame > img, a.frame:hover > img { transform: scale(1.03); }
 .menu-panel { position: fixed; inset: var(--nav-h) 0 0 0; background: var(--p-bg); z-index: 49; overflow-y: auto; padding: 32px var(--gutter) 120px; }
 .menu-panel a.menu-panel__item { display: block; font-family: var(--font-serif), Georgia, serif; font-size: 32px; padding: 8px 0; color: inherit; text-decoration: none; border-bottom: 1px solid var(--p-line); }
 
-/* Phone action bar (DESIGN.md §6.1, at 390) */
-.phone-bar { display: none; }
-@media (max-width: 639px) {
-  .phone-bar {
-    display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center;
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-    background: var(--p-bg); border-top: 1px solid var(--p-line);
-  }
-  .phone-bar .btn { min-height: 48px; }
-  body.has-phone-bar { padding-bottom: 76px; }
-}
 
 /* ---------- Hero: full-bleed photograph, words in a solid cream box ---------- */
 .hero-photo { position: relative; min-height: calc(100svh - var(--nav-h)); display: flex; align-items: flex-end; overflow: hidden; background: var(--p-inv-bg); }
@@ -318,8 +306,7 @@ textarea.input { min-height: 120px; resize: vertical; }
 
 /* ---------- Helpers added for pages ---------- */
 .fill > img, .fill > .ph { display: grid; width: 100%; height: 100%; object-fit: cover; }
-.has-phone-bar-wrap { min-height: 100svh; }
-@media (max-width: 639px) { .has-phone-bar-wrap { padding-bottom: 76px; } }
+.site-wrap { min-height: 100svh; }
 
 /* Reach tiles (server-drawn still map) */
 .reach__tiles { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 4px; }

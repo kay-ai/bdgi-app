@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getIntakeOptions } from "@/server/services/join-data";
+import { contactMode } from "@/server/services/reach";
 import { StudentIntakeForm } from "@/components/join/StudentIntakeForm";
 
 export const dynamic = "force-dynamic";
@@ -21,5 +22,5 @@ export default async function StudentJoinPage({
   const { programme } = await searchParams;
   setRequestLocale(locale);
   const options = await getIntakeOptions();
-  return <StudentIntakeForm options={options} locale={locale} preselect={programme ?? null} />;
+  return <StudentIntakeForm options={options} locale={locale} preselect={programme ?? null} contactMode={contactMode()} />;
 }

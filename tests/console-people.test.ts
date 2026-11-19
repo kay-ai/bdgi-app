@@ -67,6 +67,8 @@ function intake(age = 13): StudentIntake {
     help: { needs: ["confidence"], schoolSubject: "", needsOther: "", deviceAccess: "own_smartphone" },
     contact: {
       language: "en",
+      email: "",
+      guardianEmail: "",
       phone: `+234812${String(3000000 + seq).slice(-7)}`,
       guardianName: "Bola Bello",
       guardianRelationship: "mother",

@@ -1,10 +1,11 @@
 import "server-only";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import { decrypt, encrypt, lookupHash, newNumericCode, newToken } from "@/lib/crypto";
-import type { StudentIntake } from "@/server/validation/join";
+import { contactRules, type StudentIntake } from "@/server/validation/join";
 import { audit, type Ctx } from "./audit";
 import { dispatch, queueTemplate } from "./messaging";
+import { contactMode, reach, reachPlain } from "./reach";
 import { hit } from "./rate-limit";
 
 export type IntakeResult =
@@ -22,10 +23,18 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
     return { ok: false, error: { code: "rate_limited", message: "rateLimited" } };
   }
   const { about, dreams, help, contact, checkin } = input;
-  const guardianPhone = contact.guardianPhone || null;
-  if (guardianPhone && !(await hit(`intake:phone:${lookupHash(guardianPhone)}`, 5, 3600))) {
-    return { ok: false, error: { code: "rate_limited", message: "rateLimited" } };
+  const mode = contactMode();
+  if (!contactRules(about.age, help.deviceAccess, mode).safeParse(contact).success) {
+    return { ok: false, error: { code: "invalid", message: "invalid" } };
   }
+  const guardianPhone = contact.guardianPhone || null;
+  const guardianEmail = contact.guardianEmail || null;
+  for (const key of [guardianPhone && `phone:${lookupHash(guardianPhone)}`, guardianEmail && `email:${lookupHash(guardianEmail)}`]) {
+    if (key && !(await hit(`intake:${key}`, 5, 3600))) return { ok: false, error: { code: "rate_limited", message: "rateLimited" } };
+  }
+  const studentChannel = help.deviceAccess === "basic_phone" ? ("sms" as const) : ("whatsapp" as const);
+  // Where the guardian's messages go: their email in email mode, else the channel they picked.
+  const guardianTo = reachPlain({ phone: guardianPhone, email: guardianEmail, preferredChannel: contact.guardianChannel }, mode);
 
   const isAdult = about.age >= 18;
   const settingsRows = await db.select().from(s.setting).where(sql`${s.setting.key} in ('org_phone','consent_text_version')`);
@@ -43,7 +52,7 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
   const messageIds: string[] = [];
 
   const result = await db.transaction(async (tx) => {
-    // 2. Duplicate check: same first name + surname + school, or same guardian phone + first name.
+    // 2. Duplicate check: same first name + surname + school, or same guardian phone or email + first name.
     const sameName = await tx
       .select({ id: s.person.id, surname: s.person.surname })
       .from(s.person)
@@ -55,14 +64,17 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
         ),
       );
     let existing = sameName.find((p) => decrypt(p.surname)?.toLowerCase() === about.surname.toLowerCase());
-    if (!existing && guardianPhone) {
+    if (!existing && (guardianPhone || guardianEmail)) {
+      const hashes = [guardianPhone && sql`guardian.phone_hash = ${lookupHash(guardianPhone)}`, guardianEmail && sql`guardian.email_hash = ${lookupHash(guardianEmail)}`].filter(
+        (x): x is ReturnType<typeof sql> => !!x,
+      );
       const [g] = await tx
         .select({ id: s.person.id, surname: s.person.surname })
         .from(s.guardianLink)
         .innerJoin(s.person, eq(s.person.id, s.guardianLink.studentId))
         .innerJoin(sql`person as guardian`, sql`guardian.id = ${s.guardianLink.guardianId}`)
         .where(
-          and(sql`guardian.phone_hash = ${lookupHash(guardianPhone)}`, sql`lower(${s.person.firstName}) = lower(${about.firstName})`),
+          and(or(...hashes), sql`lower(${s.person.firstName}) = lower(${about.firstName})`),
         );
       existing = g;
     }
@@ -78,8 +90,10 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
       gender: about.gender,
       phone: encrypt(contact.phone || null),
       phoneHash: contact.phone ? lookupHash(contact.phone) : null,
+      email: encrypt(contact.email || null),
+      emailHash: contact.email ? lookupHash(contact.email) : null,
       language: contact.language,
-      preferredChannel: contact.phone ? (help.deviceAccess === "basic_phone" ? ("sms" as const) : ("whatsapp" as const)) : ("sms" as const),
+      preferredChannel: mode === "email" && contact.email ? ("email" as const) : contact.phone ? studentChannel : ("sms" as const),
       stateId: about.stateId,
       lgaId: about.lgaId || school?.lgaId || null,
       schoolId: about.schoolId || null,
@@ -146,9 +160,13 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
 
     // Guardian
     let guardianId: string | null = null;
-    if (guardianPhone && contact.guardianName) {
-      const hash = lookupHash(guardianPhone);
-      const [g] = await tx.select({ id: s.person.id }).from(s.person).where(eq(s.person.phoneHash, hash));
+    if ((guardianPhone || guardianEmail) && contact.guardianName) {
+      const phoneHash = guardianPhone ? lookupHash(guardianPhone) : null;
+      const emailHash = guardianEmail ? lookupHash(guardianEmail) : null;
+      const [g] = await tx
+        .select({ id: s.person.id })
+        .from(s.person)
+        .where(or(phoneHash ? eq(s.person.phoneHash, phoneHash) : undefined, emailHash ? eq(s.person.emailHash, emailHash) : undefined));
       if (g) guardianId = g.id;
       else {
         const [ng] = await tx
@@ -158,9 +176,11 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
             surname: encrypt(contact.guardianName.split(" ").slice(1).join(" ") || "-"),
             gender: "prefer_not_to_say",
             phone: encrypt(guardianPhone),
-            phoneHash: hash,
+            phoneHash,
+            email: encrypt(guardianEmail),
+            emailHash,
             language: contact.language,
-            preferredChannel: contact.guardianChannel,
+            preferredChannel: guardianTo?.channel ?? contact.guardianChannel,
             whatsappOptIn: contact.guardianChannel === "whatsapp",
             stateId: about.stateId,
             status: "active",
@@ -188,7 +208,7 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
         ip: ctx.ip ?? null,
         userAgent: ctx.userAgent ?? null,
       });
-    } else if (agreement && guardianId && guardianPhone) {
+    } else if (agreement && guardianId && guardianTo) {
       await tx.insert(s.consent).values({
         studentId: personId,
         guardianId,
@@ -200,15 +220,14 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
       });
       const id = await queueTemplate({
         templateKey: "consent.school_notice",
-        to: guardianPhone,
-        channel: contact.guardianChannel,
+        ...guardianTo,
         personId: guardianId,
         language: contact.language,
         vars: { schoolName, studentFirstName: studentFirst, programmeName: "", link: "" },
         eventKey: `consent.school_notice:${personId}`,
       }, tx);
       if (id) messageIds.push(id);
-    } else if (guardianId && guardianPhone) {
+    } else if (guardianId && guardianTo) {
       const token = newToken();
       const code = newNumericCode();
       const pending = await tx
@@ -233,8 +252,7 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
       const link = `${process.env.APP_URL ?? "http://localhost:3000"}/consent/${token}`;
       const id = await queueTemplate({
         templateKey: "consent.request",
-        to: guardianPhone,
-        channel: contact.guardianChannel,
+        ...guardianTo,
         personId: guardianId,
         language: contact.language,
         vars: { guardianName: contact.guardianName, studentFirstName: studentFirst, schoolName, link, code, orgPhone },
@@ -246,11 +264,11 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
     }
 
     // 5. Student welcome
-    if (contact.phone) {
+    const studentTo = reachPlain({ phone: contact.phone || null, email: contact.email || null, preferredChannel: studentChannel }, mode);
+    if (studentTo) {
       const id = await queueTemplate({
         templateKey: "student.welcome",
-        to: contact.phone,
-        channel: help.deviceAccess === "basic_phone" ? "sms" : "whatsapp",
+        ...studentTo,
         personId,
         language: contact.language,
         vars: { firstName: studentFirst, guardianName: contact.guardianName || "" },
@@ -306,7 +324,8 @@ export async function remindGuardian(ctx: Ctx, personId: string) {
     .from(s.consent)
     .innerJoin(s.person, eq(s.person.id, s.consent.guardianId))
     .where(and(eq(s.consent.studentId, personId), eq(s.consent.type, "participation"), isNull(s.consent.givenAt)));
-  if (!row || !row.guardian.phone) return { ok: false as const };
+  const to = row ? reach(row.guardian) : null;
+  if (!row || !to) return { ok: false as const };
   const [student] = await db.select().from(s.person).where(eq(s.person.id, personId));
   const token = newToken();
   const code = newNumericCode();
@@ -316,8 +335,7 @@ export async function remindGuardian(ctx: Ctx, personId: string) {
     .where(eq(s.consent.id, row.consent.id));
   const id = await queueTemplate({
     templateKey: "consent.reminder",
-    to: decrypt(row.guardian.phone),
-    channel: row.guardian.preferredChannel,
+    ...to,
     personId: row.guardian.id,
     vars: {
       studentFirstName: student?.firstName ?? "",

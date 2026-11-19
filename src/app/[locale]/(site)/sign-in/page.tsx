@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { SendCodeForm } from "@/components/auth/SignInForms";
+import { contactMode } from "@/server/services/reach";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("signIn");
@@ -20,6 +21,8 @@ export default async function SignInPage({
   const { via, next } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations("signIn");
+  // D-018: in email mode the code goes by email unless someone asks for their phone.
+  const byEmail = via === "email" || (contactMode() === "email" && via !== "phone");
   return (
     <section className="screen" aria-labelledby="si-h">
       <div className="wrap justify-center">
@@ -28,9 +31,9 @@ export default async function SignInPage({
             <h1 id="si-h" className="t-h1">
               {t("title")}
             </h1>
-            <p className="t-lead text-muted">{t("lead")}</p>
+            <p className="t-lead text-muted">{t(byEmail && contactMode() === "email" ? "leadEmail" : "lead")}</p>
           </div>
-          <SendCodeForm initialKind={via === "email" ? "email" : "phone"} next={typeof next === "string" ? next : undefined} />
+          <SendCodeForm initialKind={byEmail ? "email" : "phone"} next={typeof next === "string" ? next : undefined} />
           <ul className="rows" role="list">
             <li className="flex flex-wrap items-center justify-between gap-4">
               <span>{t("student")}</span>

@@ -66,22 +66,36 @@ export const stepHelp = z
     deviceAccess: z.enum(DEVICES, { message: "pick" }),
   });
 
+const email = z.string().trim().toLowerCase().email("email").max(200).or(z.literal(""));
+
 export const stepContactBase = z.object({
   language: z.enum(["en", "yo"]),
   phone,
+  email: email.default(""),
   guardianName: z.string().trim().max(80),
   guardianRelationship: z.enum(RELATIONSHIPS).or(z.literal("")),
   guardianPhone: phone,
+  guardianEmail: email.default(""),
   guardianChannel: z.enum(["whatsapp", "sms"]),
   avatarKey: z.string().regex(/^a(0[1-9]|1\d|2[0-4])$/),
 });
 
-export const contactRules = (age: number, deviceAccess: string) =>
+/**
+ * Who must give what. In email mode (D-018) a guardian's email is required under 18 and an adult's
+ * own email is required; the student's email is optional. In phone mode, the guardian's phone.
+ */
+export const contactRules = (age: number, deviceAccess: string, mode: "email" | "phone" = "phone") =>
   stepContactBase.superRefine((v, ctx) => {
     if (age < 18) {
       if (v.guardianName.length < 2) ctx.addIssue({ code: "custom", path: ["guardianName"], message: "guardianName" });
       if (!v.guardianRelationship) ctx.addIssue({ code: "custom", path: ["guardianRelationship"], message: "pick" });
-      if (!v.guardianPhone) ctx.addIssue({ code: "custom", path: ["guardianPhone"], message: "phone" });
+      if (mode === "email" && !v.guardianEmail) ctx.addIssue({ code: "custom", path: ["guardianEmail"], message: "email" });
+      if (mode === "phone" && !v.guardianPhone) ctx.addIssue({ code: "custom", path: ["guardianPhone"], message: "phone" });
+    } else if (mode === "email" && !v.email) {
+      ctx.addIssue({ code: "custom", path: ["email"], message: "email" });
+    }
+    if (age < 18 && v.email && v.guardianEmail && v.email === v.guardianEmail && deviceAccess !== "shared_smartphone") {
+      ctx.addIssue({ code: "custom", path: ["email"], message: "sameEmail" });
     }
     if (v.phone && v.guardianPhone && v.phone === v.guardianPhone && deviceAccess !== "shared_smartphone") {
       ctx.addIssue({ code: "custom", path: ["phone"], message: "samePhone" });
