@@ -7,6 +7,7 @@ import { actorStates, can, hasRole, type Actor } from "@/server/permissions/can"
 import { scopeStudents, scopeVolunteers } from "@/server/permissions/scope";
 import { audit } from "./audit";
 import { dispatch, queueTemplate } from "./messaging";
+import { reach } from "./reach";
 
 /**
  * Console lists of students, volunteers and schools, with approval (spec/07 §3–5, cut down).
@@ -164,7 +165,7 @@ export async function listVolunteers(actor: Actor | null, f: PeopleFilters) {
  */
 export async function decideVolunteer(actor: Actor | null, personId: string, decision: "approve" | "decline", ip: string | null = null) {
   const [v] = await db
-    .select({ id: s.person.id, stage: s.volunteerProfile.stage, stateId: s.person.stateId, phone: s.person.phone })
+    .select({ id: s.person.id, stage: s.volunteerProfile.stage, stateId: s.person.stateId, phone: s.person.phone, email: s.person.email, preferredChannel: s.person.preferredChannel })
     .from(s.volunteerProfile)
     .innerJoin(s.person, eq(s.person.id, s.volunteerProfile.personId))
     .where(and(eq(s.person.id, personId), isNull(s.person.deletedAt)));
@@ -177,13 +178,13 @@ export async function decideVolunteer(actor: Actor | null, personId: string, dec
     if (decision === "approve") {
       await tx.update(s.volunteerProfile).set({ stage: "active", activatedAt: now, updatedAt: now }).where(eq(s.volunteerProfile.personId, personId));
       await tx.update(s.person).set({ status: "active", updatedAt: now }).where(eq(s.person.id, personId));
-      const to = decrypt(v.phone);
+      const to = reach({ ...v, preferredChannel: v.preferredChannel === "sms" ? "whatsapp" : v.preferredChannel });
       if (to) {
         const id = await queueTemplate(
           {
             templateKey: "volunteer.activated",
-            to,
-            channel: "whatsapp",
+            to: to.to,
+            channel: to.channel,
             personId,
             vars: { link: `${process.env.APP_URL ?? ""}/app/volunteer` },
             eventKey: `volunteer.activated:${personId}`,

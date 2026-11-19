@@ -2,11 +2,12 @@ import "server-only";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db, schema as s } from "@/db";
-import { decrypt, lookupHash, newNumericCode, newToken } from "@/lib/crypto";
+import { lookupHash, newNumericCode, newToken } from "@/lib/crypto";
 import { assertCan } from "@/server/permissions/assert";
 import type { Actor } from "@/server/permissions/can";
 import { audit } from "./audit";
 import { dispatch, queueTemplate } from "./messaging";
+import { reach } from "./reach";
 
 /**
  * Consent follow-up (spec/05 §3): reminders on day 2 and day 6 while still pending, a staff task
@@ -47,16 +48,18 @@ type Pending = {
   stateId: string | null;
   guardianId: string;
   guardianPhone: string | null;
+  guardianEmail: string | null;
   guardianChannel: "whatsapp" | "sms" | "email";
 };
 
 async function sendReminder(p: Pending, eventKey: string, now: Date) {
-  if (!p.guardianPhone || (await alreadyQueued(eventKey))) return null;
+  const to = reach({ phone: p.guardianPhone, email: p.guardianEmail, preferredChannel: p.guardianChannel });
+  if (!to || (await alreadyQueued(eventKey))) return null;
   const { link, code } = await freshLink(p.consentId, now);
   return queueTemplate({
     templateKey: "consent.reminder",
-    to: decrypt(p.guardianPhone),
-    channel: p.guardianChannel,
+    to: to.to,
+    channel: to.channel,
     personId: p.guardianId,
     vars: { studentFirstName: p.studentFirstName, link, code },
     eventKey,
@@ -76,6 +79,7 @@ export async function runConsentReminders(now = new Date()) {
       stateId: s.person.stateId,
       guardianId: s.consent.guardianId,
       guardianPhone: guardian.phone,
+      guardianEmail: guardian.email,
       guardianChannel: guardian.preferredChannel,
     })
     .from(s.consent)
@@ -140,6 +144,7 @@ export async function reissueConsent(actor: Actor | null, studentId: string, opt
       guardianId: guardian.id,
       guardianFirstName: guardian.firstName,
       guardianPhone: guardian.phone,
+      guardianEmail: guardian.email,
       guardianChannel: guardian.preferredChannel,
     })
     .from(s.consent)
@@ -152,15 +157,16 @@ export async function reissueConsent(actor: Actor | null, studentId: string, opt
     resource: row ? { personId: studentId, stateId: row.stateId, schoolId: row.schoolId } : undefined,
   });
   if (!row || row.status !== "pending_consent") return { ok: false as const, code: "not_pending" as const };
-  if (!row.guardianPhone) return { ok: false as const, code: "no_phone" as const };
+  const to = reach({ phone: row.guardianPhone, email: row.guardianEmail, preferredChannel: row.guardianChannel });
+  if (!to) return { ok: false as const, code: "no_phone" as const };
 
   const { link, code } = await freshLink(row.consentId, now, { requestedAt: now, expiresAt: new Date(now.getTime() + CONSENT_TTL_DAYS * DAY) });
   const [settingRow] = await db.select({ value: s.setting.value }).from(s.setting).where(eq(s.setting.key, "org_phone"));
   const [intakeSchool] = row.schoolId ? await db.select({ name: s.school.name }).from(s.school).where(eq(s.school.id, row.schoolId)) : [];
   const id = await queueTemplate({
     templateKey: "consent.request",
-    to: decrypt(row.guardianPhone),
-    channel: row.guardianChannel,
+    to: to.to,
+    channel: to.channel,
     personId: row.guardianId,
     vars: {
       guardianName: row.guardianFirstName,

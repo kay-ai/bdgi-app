@@ -6,6 +6,7 @@ import { encrypt, lookupHash } from "@/lib/crypto";
 import { normalisePhone } from "@/lib/phone";
 import { audit, type Ctx } from "./audit";
 import { dispatch, queueTemplate } from "./messaging";
+import { contactMode, reach } from "./reach";
 import { hit } from "./rate-limit";
 
 const phoneOrEmpty = z
@@ -106,18 +107,18 @@ export async function submitConcern(ctx: Ctx, input: z.infer<typeof concernInput
       .returning({ id: s.safeguardingCase.id });
     // Notify safeguarding leads with no details in the message (spec/08 staff.case_new).
     const leads = await tx
-      .select({ id: s.person.id, phone: s.person.phone, channel: s.person.preferredChannel })
+      .select({ id: s.person.id, phone: s.person.phone, email: s.person.email, preferredChannel: s.person.preferredChannel })
       .from(s.personRole)
       .innerJoin(s.person, eq(s.person.id, s.personRole.personId))
       .where(sql`${s.personRole.role} in ('safeguarding_lead','admin') and ${s.personRole.revokedAt} is null`);
     for (const l of leads) {
-      if (!l.phone) continue;
-      const { decrypt } = await import("@/lib/crypto");
+      const to = reach(l);
+      if (!to) continue;
       const id = await queueTemplate(
         {
           templateKey: "staff.case_new",
-          to: decrypt(l.phone),
-          channel: l.channel,
+          to: to.to,
+          channel: to.channel,
           personId: l.id,
           vars: { reference: ref, severity: input.immediateDanger ? "emergency" : "medium", link: `${process.env.APP_URL ?? ""}/console` },
           eventKey: `staff.case_new:${c!.id}:${l.id}`,
@@ -144,7 +145,7 @@ export const volunteerInput = z.object({
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gender: z.enum(["female", "male", "other", "prefer_not_to_say"]),
   phone: phoneOrEmpty.refine((v) => !!v, "phone"),
-  email: z.string().trim().email().max(200),
+  email: z.string().trim().toLowerCase().email().max(200),
   stateId: z.string().uuid(),
   lgaId: z.string().uuid().or(z.literal("")),
   occupation: z.string().trim().max(100),
@@ -185,6 +186,7 @@ export async function submitVolunteer(ctx: Ctx, input: z.infer<typeof volunteerI
         phoneHash: lookupHash(input.phone),
         email: encrypt(input.email),
         emailHash: lookupHash(input.email),
+        preferredChannel: contactMode() === "email" ? "email" : "whatsapp",
         stateId: input.stateId,
         lgaId: input.lgaId || null,
         status: "pending_review",
@@ -216,8 +218,7 @@ export async function submitVolunteer(ctx: Ctx, input: z.infer<typeof volunteerI
     const id = await queueTemplate(
       {
         templateKey: "volunteer.application_received",
-        to: input.phone,
-        channel: "whatsapp",
+        ...(contactMode() === "email" ? { to: input.email, channel: "email" as const } : { to: input.phone, channel: "whatsapp" as const }),
         personId,
         vars: { firstName: input.firstName, link: `${process.env.APP_URL ?? ""}/app` },
         eventKey: `volunteer.application_received:${personId}`,
@@ -240,7 +241,7 @@ export const schoolInput = z.object({
   name: z.string().trim().min(2).max(100),
   role: z.enum(["principal", "vice_principal", "teacher", "counsellor", "other"]),
   phone: phoneOrEmpty.refine((v) => !!v, "phone"),
-  email: z.string().trim().email().max(200).or(z.literal("")),
+  email: z.string().trim().toLowerCase().email().max(200).or(z.literal("")),
   programmeId: z.string().uuid().or(z.literal("")),
   approxStudents: z.coerce.number().int().min(0).max(5000).optional(),
   term: z.string().trim().max(100),
@@ -279,8 +280,7 @@ export async function submitSchoolRequest(ctx: Ctx, input: z.infer<typeof school
     const id = await queueTemplate(
       {
         templateKey: "school.request_received",
-        to: input.phone,
-        channel: "whatsapp",
+        ...(contactMode() === "email" && input.email ? { to: input.email, channel: "email" as const } : { to: input.phone, channel: "whatsapp" as const }),
         vars: { name: input.name, schoolName: input.schoolName },
         eventKey: `school.request_received:${r!.id}`,
       },

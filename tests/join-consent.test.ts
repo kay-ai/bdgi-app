@@ -61,6 +61,8 @@ function intake(over: { firstName?: string; surname?: string; age?: number; phon
     help: { needs: ["confidence"], schoolSubject: "", needsOther: "", deviceAccess: "own_smartphone" },
     contact: {
       language: "en",
+      email: "",
+      guardianEmail: "",
       phone: over.phone ?? `+234810${String(1000000 + seq).slice(-7)}`,
       guardianName: "Ngozi Okafor",
       guardianRelationship: "mother",

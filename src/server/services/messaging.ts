@@ -189,7 +189,8 @@ async function sendOne(m: MessageRow, now: Date): Promise<void> {
     res = await providerFor(m.channel).send({
       to: decrypt(m.toAddress),
       body: decrypt(m.bodyRendered),
-      subject: tpl?.subjectEn ?? null,
+      // Subjects may name a variable ({{studentFirstName}}); secrets never appear in subjects.
+      subject: tpl?.subjectEn ? render(tpl.subjectEn, (m.variables ?? {}) as Record<string, string>) : null,
       attachments: await attachmentsFor(m.templateKey, m.variables),
     });
   } catch (e) {

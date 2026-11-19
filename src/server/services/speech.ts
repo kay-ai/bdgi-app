@@ -8,6 +8,7 @@ import { COACH_JSON_SCHEMA, coachOutput, fallbackFeedback, PROMPT_VERSION, SYSTE
 import { deliveryScores, nextLesson, passedLesson, rankFor, updateRatings, weakest, type Ratings } from "@/server/coach/tailor";
 import type { Actor } from "@/server/permissions/can";
 import { scorer, transcriber } from "@/server/providers/speech";
+import { reach } from "./reach";
 import { storage } from "@/server/providers/storage";
 import { audit, type Ctx } from "./audit";
 import { dispatch, queueTemplate } from "./messaging";
@@ -267,7 +268,7 @@ export async function processAttempt(id: string, now = new Date()) {
   const contentType = (a.metrics as { contentType?: string } | null)?.contentType ?? "audio/webm";
   const st = await settings();
   try {
-    const [p] = await db.select({ firstName: s.person.firstName, phone: s.person.phone, channel: s.person.preferredChannel, stateId: s.person.stateId }).from(s.person).where(eq(s.person.id, a.personId));
+    const [p] = await db.select({ firstName: s.person.firstName, phone: s.person.phone, email: s.person.email, preferredChannel: s.person.preferredChannel, stateId: s.person.stateId }).from(s.person).where(eq(s.person.id, a.personId));
     const lesson: Lesson | null = a.lessonKey ? (LESSON[a.lessonKey] ?? null) : null;
     const target = lesson?.drill.targetSeconds ?? 120;
     const motionText =
@@ -364,11 +365,12 @@ export async function processAttempt(id: string, now = new Date()) {
     });
 
     if (fb?.safeguarding_flag) await openSafeguardingCase(a.id, a.personId, p?.stateId ?? null);
-    if (p?.phone) {
+    const to = p ? reach({ ...p, preferredChannel: p.preferredChannel === "sms" ? "whatsapp" : p.preferredChannel }) : null;
+    if (p && to) {
       const mid = await queueTemplate({
         templateKey: "speech.result",
-        to: decrypt(p.phone),
-        channel: "whatsapp",
+        to: to.to,
+        channel: to.channel,
         personId: a.personId,
         vars: {
           firstName: p.firstName,
@@ -439,17 +441,18 @@ async function openSafeguardingCase(attemptId: string, personId: string, stateId
       })
       .returning({ id: s.safeguardingCase.id });
     const leads = await tx
-      .select({ id: s.person.id, phone: s.person.phone, channel: s.person.preferredChannel })
+      .select({ id: s.person.id, phone: s.person.phone, email: s.person.email, preferredChannel: s.person.preferredChannel })
       .from(s.personRole)
       .innerJoin(s.person, eq(s.person.id, s.personRole.personId))
       .where(sql`${s.personRole.role} in ('safeguarding_lead','admin') and ${s.personRole.revokedAt} is null`);
     for (const l of leads) {
-      if (!l.phone) continue;
+      const to = reach(l);
+      if (!to) continue;
       const id = await queueTemplate(
         {
           templateKey: "staff.case_new",
-          to: decrypt(l.phone),
-          channel: l.channel,
+          to: to.to,
+          channel: to.channel,
           personId: l.id,
           vars: { reference: ref, severity: "medium", link: `${process.env.APP_URL ?? ""}/console` },
           eventKey: `staff.case_new:${c!.id}:${l.id}`,

@@ -1,4 +1,5 @@
 import "server-only";
+import { smtpProvider } from "./smtp";
 
 export type SendResult = { ok: true; providerId: string } | { ok: false; error: string };
 export type Attachment = { filename: string; contentType: string; content: Uint8Array };
@@ -40,8 +41,9 @@ export function providerFor(channel: "whatsapp" | "sms" | "email"): MessageProvi
     sms: process.env.SMS_PROVIDER,
     email: process.env.EMAIL_PROVIDER,
   }[channel];
+  if (channel === "email" && env === "smtp") return smtpProvider();
   if (env && env !== "console") {
-    // Real adapters (meta, termii, ses) arrive in M8; refusing loudly beats a silent no-op.
+    // Phone adapters (meta, termii) arrive in M8; refusing loudly beats a silent no-op.
     throw new Error(`${channel} provider "${env}" is not implemented yet`);
   }
   return consoleProvider(channel);

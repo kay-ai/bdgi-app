@@ -45,9 +45,11 @@ type Data = {
   contact: {
     language: "en" | "yo";
     phone: string;
+    email: string;
     guardianName: string;
     guardianRelationship: string;
     guardianPhone: string;
+    guardianEmail: string;
     guardianChannel: "whatsapp" | "sms";
     avatarKey: string;
   };
@@ -79,9 +81,11 @@ function blank(locale: string, preselect: string | undefined): Data {
     contact: {
       language: locale === "yo" ? "yo" : "en",
       phone: "",
+      email: "",
       guardianName: "",
       guardianRelationship: "",
       guardianPhone: "",
+      guardianEmail: "",
       guardianChannel: "whatsapp",
       avatarKey: AVATARS[Math.floor(Math.random() * 24)]!,
     },
@@ -95,11 +99,15 @@ export function StudentIntakeForm({
   options,
   locale,
   preselect,
+  contactMode = "phone",
 }: {
   options: IntakeOptions;
   locale: string;
   preselect: string | null;
+  /** D-018: "email" asks for email addresses instead of phone numbers. */
+  contactMode?: "email" | "phone";
 }) {
+  const byEmail = contactMode === "email";
   const t = useTranslations("join");
   const tc = useTranslations("common");
   const preId = options.programmes.find((p) => p.slug === preselect || p.id === preselect)?.id;
@@ -190,7 +198,7 @@ export function StudentIntakeForm({
     }
     if (step === 2) return check(stepDreams, data.dreams);
     if (step === 3) return check(stepHelp, data.help);
-    if (step === 4) return check(contactRules(age, data.help.deviceAccess), data.contact);
+    if (step === 4) return check(contactRules(age, data.help.deviceAccess, contactMode), data.contact);
     return true;
   }
 
@@ -478,13 +486,24 @@ export function StudentIntakeForm({
                     ]}
                   />
                 </Q>
-                <label className="field">
-                  <span className="text-[16px] font-medium">
-                    {t("student.phone")} <span className="font-normal text-muted">({tc("optional")})</span>
-                  </span>
-                  <input className="input" type="tel" inputMode="tel" autoComplete="tel" value={data.contact.phone} onChange={(e) => set("contact", { phone: e.target.value })} aria-invalid={!!errors.phone} />
-                  {err("phone") && <span className="error" role="alert">{err("phone")}</span>}
-                </label>
+                {byEmail ? (
+                  <label className="field">
+                    <span className="text-[16px] font-medium">
+                      {t("student.email")} {isMinor && <span className="font-normal text-muted">({tc("optional")})</span>}
+                    </span>
+                    <span className="hint">{t(isMinor ? "student.emailHint" : "student.emailHintAdult")}</span>
+                    <input className="input" type="email" inputMode="email" autoComplete="email" value={data.contact.email ?? ""} onChange={(e) => set("contact", { email: e.target.value })} aria-invalid={!!errors.email} />
+                    {err("email") && <span className="error" role="alert">{err("email")}</span>}
+                  </label>
+                ) : (
+                  <label className="field">
+                    <span className="text-[16px] font-medium">
+                      {t("student.phone")} <span className="font-normal text-muted">({tc("optional")})</span>
+                    </span>
+                    <input className="input" type="tel" inputMode="tel" autoComplete="tel" value={data.contact.phone} onChange={(e) => set("contact", { phone: e.target.value })} aria-invalid={!!errors.phone} />
+                    {err("phone") && <span className="error" role="alert">{err("phone")}</span>}
+                  </label>
+                )}
                 {isMinor && (
                   <>
                     <label className="field">
@@ -504,6 +523,15 @@ export function StudentIntakeForm({
                       </select>
                       {err("guardianRelationship") && <span className="error" role="alert">{err("guardianRelationship")}</span>}
                     </label>
+                    {byEmail ? (
+                      <label className="field">
+                        <span className="text-[16px] font-medium">{t("student.guardianEmail")}</span>
+                        <span className="hint">{t("student.guardianEmailHint")}</span>
+                        <input className="input" type="email" inputMode="email" value={data.contact.guardianEmail ?? ""} onChange={(e) => set("contact", { guardianEmail: e.target.value })} aria-invalid={!!errors.guardianEmail} />
+                        {err("guardianEmail") && <span className="error" role="alert">{err("guardianEmail")}</span>}
+                      </label>
+                    ) : (
+                    <>
                     <label className="field">
                       <span className="text-[16px] font-medium">{t("student.guardianPhone")}</span>
                       <span className="hint">{t("student.guardianPhoneHint")}</span>
@@ -521,6 +549,8 @@ export function StudentIntakeForm({
                         ]}
                       />
                     </Q>
+                    </>
+                    )}
                   </>
                 )}
                 <Q label={t("student.avatar")} as="fieldset">

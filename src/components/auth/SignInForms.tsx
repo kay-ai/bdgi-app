@@ -193,7 +193,7 @@ export function VerifyCodeForm({ masked, next }: { masked: string; next?: string
           {wait > 0 ? t("resendIn", { s: wait }) : t("resend")}
         </button>
         <Link href={next ? `/sign-in?via=email&next=${encodeURIComponent(next)}` : "/sign-in?via=email"} className="uline">
-          {t("useEmail")}
+          {masked.includes("@") ? t("otherEmail") : t("useEmail")}
         </Link>
       </div>
     </form>

@@ -131,6 +131,18 @@ async function main() {
     .update(s.messageTemplate)
     .set({ bodyEn: receipt.bodyEn, variables: [...receipt.variables] })
     .where(and(eq(s.messageTemplate.key, "donation.receipt"), like(s.messageTemplate.bodyEn, "HTML email with%")));
+  // D-018: existing databases gain the email channel and email subjects. Channels staff removed
+  // stay removed only if email was never added; subjects staff wrote are kept.
+  for (const t of messageTemplates) {
+    if (!(t.channels as readonly string[]).includes("email")) continue;
+    const [row] = await db.select().from(s.messageTemplate).where(eq(s.messageTemplate.key, t.key));
+    if (!row) continue;
+    const channels = row.channels as string[];
+    const patch: Partial<typeof s.messageTemplate.$inferInsert> = {};
+    if (!channels.includes("email")) patch.channels = [...channels, "email"] as typeof row.channels;
+    if (!row.subjectEn && t.subjectEn) patch.subjectEn = t.subjectEn;
+    if (Object.keys(patch).length) await db.update(s.messageTemplate).set(patch).where(eq(s.messageTemplate.key, t.key));
+  }
   for (const [from, to, code] of data.redirects) {
     await db
       .insert(s.redirect)
