@@ -4,7 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { Logo } from "@/components/site/Logo";
-import { signOutAction } from "@/app/actions/auth";
+import { SignOutForm } from "@/components/SignOutForm";
 import { currentSession, requireActor } from "@/server/auth/current";
 import { profilesForUser } from "@/server/auth/sessions";
 import { isStaff } from "@/server/permissions/can";
@@ -51,11 +51,9 @@ export default async function HubLayout({ children, params }: { children: ReactN
                 <span>{actor.firstName}</span>
               </span>
             )}
-            <form action={signOutAction}>
-              <button type="submit" className="uline">
-                {t("hub.signOut")}
-              </button>
-            </form>
+            <SignOutForm locale={locale} className="uline">
+              {t("hub.signOut")}
+            </SignOutForm>
           </div>
         </div>
       </header>

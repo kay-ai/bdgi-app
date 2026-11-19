@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { signOutAction } from "@/app/actions/auth";
+import { SignOutForm } from "@/components/SignOutForm";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("signIn");
@@ -25,11 +25,9 @@ export default async function NoAccessPage({ params }: { params: Promise<{ local
             <Link href="/app" className="btn">
               {t("toHome")}
             </Link>
-            <form action={signOutAction}>
-              <button type="submit" className="btn btn--plain">
-                {t("signOutSwitch")}
-              </button>
-            </form>
+            <SignOutForm locale={locale} className="btn btn--plain">
+              {t("signOutSwitch")}
+            </SignOutForm>
           </div>
         </div>
       </div>
