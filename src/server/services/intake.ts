@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, isNull, or, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, or, sql } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import { decrypt, encrypt, lookupHash, newNumericCode, newToken } from "@/lib/crypto";
 import { contactRules, type StudentIntake } from "@/server/validation/join";
@@ -7,13 +7,15 @@ import { audit, type Ctx } from "./audit";
 import { dispatch, queueTemplate } from "./messaging";
 import { contactMode, reach, reachPlain } from "./reach";
 import { hit } from "./rate-limit";
+import { saveBaseline, saveProfileAnswers } from "./student-profile";
 
 export type IntakeResult =
   | { ok: true; data: { personId: string; firstName: string; guardianName: string | null; isAdult: boolean; duplicate: boolean } }
   | { ok: false; error: { code: "too_fast" | "rate_limited" | "invalid" | "server"; message: string } };
 
 const CONSENT_TTL_DAYS = 14;
-const MIN_FILL_MS = 20_000;
+// The form is short now (D-019); a person still needs a few seconds to fill it in.
+const MIN_FILL_MS = 8_000;
 
 /** spec/05 §2 "On submit". */
 export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<IntakeResult> {
@@ -24,7 +26,7 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
   }
   const { about, dreams, help, contact, checkin } = input;
   const mode = contactMode();
-  if (!contactRules(about.age, help.deviceAccess, mode).safeParse(contact).success) {
+  if (!contactRules(about.age, help?.deviceAccess ?? "", mode).safeParse(contact).success) {
     return { ok: false, error: { code: "invalid", message: "invalid" } };
   }
   const guardianPhone = contact.guardianPhone || null;
@@ -32,7 +34,7 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
   for (const key of [guardianPhone && `phone:${lookupHash(guardianPhone)}`, guardianEmail && `email:${lookupHash(guardianEmail)}`]) {
     if (key && !(await hit(`intake:${key}`, 5, 3600))) return { ok: false, error: { code: "rate_limited", message: "rateLimited" } };
   }
-  const studentChannel = help.deviceAccess === "basic_phone" ? ("sms" as const) : ("whatsapp" as const);
+  const studentChannel = help?.deviceAccess === "basic_phone" ? ("sms" as const) : ("whatsapp" as const);
   // Where the guardian's messages go: their email in email mode, else the channel they picked.
   const guardianTo = reachPlain({ phone: guardianPhone, email: guardianEmail, preferredChannel: contact.guardianChannel }, mode);
 
@@ -129,34 +131,19 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
     }
 
     // 3. Intake answers and baseline
-    const intake = {
-      dreamCareer: dreams.dreamCareer,
-      interests: dreams.interests,
-      communityDream: dreams.communityDream || null,
-      needs: help.needs,
-      needsOther: help.needsOther || null,
-      schoolSubject: help.schoolSubject || null,
-      programmeIds: dreams.programmeIds,
-      hasOwnPhone: help.deviceAccess === "own_smartphone",
-      deviceAccess: help.deviceAccess,
-      completedAt: new Date(),
-      updatedAt: new Date(),
-    };
-    await tx
-      .insert(s.intakeResponse)
-      .values({ personId, ...intake })
-      .onConflictDoUpdate({ target: s.intakeResponse.personId, set: intake });
-
-    const answers = { q1: checkin.q1, q2: checkin.q2, q3: checkin.q3, q4: checkin.q4, q5: checkin.q5 };
-    const mean = Object.values(answers).reduce((a, b) => a + b, 0) / 5;
-    // Score on 0–100: mean of 1–5 answers × 20 (spec/05 §2 step 3).
-    await tx
-      .insert(s.assessment)
-      .values({ personId, type: "baseline", selfAnswers: answers, selfScore: String(mean * 20) })
-      .onConflictDoUpdate({
-        target: [s.assessment.personId, s.assessment.cohortId, s.assessment.type],
-        set: { selfAnswers: answers, selfScore: String(mean * 20), takenAt: new Date() },
-      });
+    // Sign-up sends only the programme (D-019); the rest comes from the Hub profile. A submission
+    // from the older, longer form (queued offline) still carries everything, so keep it.
+    const full = !!(dreams.dreamCareer && dreams.interests?.length && help);
+    if (full) {
+      await saveProfileAnswers(tx, personId, { dreams: { dreamCareer: dreams.dreamCareer!, interests: dreams.interests!, communityDream: dreams.communityDream ?? "" }, help: help! }, dreams.programmeIds);
+    } else {
+      await tx
+        .insert(s.intakeResponse)
+        .values({ personId, programmeIds: dreams.programmeIds })
+        .onConflictDoUpdate({ target: s.intakeResponse.personId, set: { programmeIds: dreams.programmeIds, updatedAt: new Date() } });
+    }
+    const { q1, q2, q3, q4, q5 } = checkin;
+    if (q1 && q2 && q3 && q4 && q5) await saveBaseline(tx, personId, { q1, q2, q3, q4, q5 });
 
     // Guardian
     let guardianId: string | null = null;
@@ -166,7 +153,13 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
       const [g] = await tx
         .select({ id: s.person.id })
         .from(s.person)
-        .where(or(phoneHash ? eq(s.person.phoneHash, phoneHash) : undefined, emailHash ? eq(s.person.emailHash, emailHash) : undefined));
+        // Never the girl herself, whose email may be the family's shared address.
+        .where(
+          and(
+            ne(s.person.id, personId),
+            or(phoneHash ? eq(s.person.phoneHash, phoneHash) : undefined, emailHash ? eq(s.person.emailHash, emailHash) : undefined),
+          ),
+        );
       if (g) guardianId = g.id;
       else {
         const [ng] = await tx

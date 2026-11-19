@@ -6,22 +6,12 @@ import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { v7 as uuidv7 } from "uuid";
 import { Link } from "@/i18n/navigation";
 import { Avatar } from "@/components/ui/Avatar";
-import { Chips, CircleScale, Q } from "./fields";
+import { EmailRow } from "./EmailRow";
+import { Chips, Q } from "./fields";
 import { offlineDb } from "@/offline/db";
 import type { IntakeOptions } from "@/server/services/join-data";
-import {
-  AVATARS,
-  CLASS_LEVELS,
-  DEVICES,
-  INTERESTS,
-  NEEDS,
-  RELATIONSHIPS,
-  contactRules,
-  stepAbout,
-  stepDreams,
-  stepHelp,
-} from "@/server/validation/join";
-import { remindGuardianAction, searchSchoolsAction, submitStudentAction } from "@/app/[locale]/(join)/join/student/actions";
+import { AVATARS, CLASS_LEVELS, RELATIONSHIPS, contactRules, stepAbout, stepProgramme } from "@/server/validation/join";
+import { changeContactAction, remindGuardianAction, searchSchoolsAction, submitStudentAction } from "@/app/[locale]/(join)/join/student/actions";
 import type { ZodTypeAny } from "zod";
 
 type Data = {
@@ -40,8 +30,7 @@ type Data = {
     schoolOther: string;
     notListed: boolean;
   };
-  dreams: { dreamCareer: string; interests: string[]; communityDream: string; programmeIds: string[] };
-  help: { needs: string[]; schoolSubject: string; needsOther: string; deviceAccess: string };
+  dreams: { programmeIds: string[] };
   contact: {
     language: "en" | "yo";
     phone: string;
@@ -53,11 +42,12 @@ type Data = {
     guardianChannel: "whatsapp" | "sms";
     avatarKey: string;
   };
-  checkin: { q1?: number; q2?: number; q3?: number; q4?: number; q5?: number; privacy: boolean };
+  checkin: { privacy: boolean };
 };
 
 const DRAFT_ID = "student";
-const TOTAL = 5;
+/** Sign-up asks only for the essentials (D-019); the rest is on the Hub profile. */
+const TOTAL = 3;
 
 function blank(locale: string, preselect: string | undefined): Data {
   return {
@@ -76,8 +66,7 @@ function blank(locale: string, preselect: string | undefined): Data {
       schoolOther: "",
       notListed: false,
     },
-    dreams: { dreamCareer: "", interests: [], communityDream: "", programmeIds: preselect ? [preselect] : [] },
-    help: { needs: [], schoolSubject: "", needsOther: "", deviceAccess: "" },
+    dreams: { programmeIds: preselect ? [preselect] : [] },
     contact: {
       language: locale === "yo" ? "yo" : "en",
       phone: "",
@@ -93,7 +82,7 @@ function blank(locale: string, preselect: string | undefined): Data {
   };
 }
 
-type Done = { firstName: string; guardianName: string | null; isAdult: boolean; handle: string | null; queued?: boolean };
+type Done = { firstName: string; guardianName: string | null; isAdult: boolean; handle: string | null; contactHandle?: string; queued?: boolean };
 
 export function StudentIntakeForm({
   options,
@@ -113,7 +102,6 @@ export function StudentIntakeForm({
   const preId = options.programmes.find((p) => p.slug === preselect || p.id === preselect)?.id;
   const [data, setData] = useState<Data>(() => blank(locale, preId));
   const [step, setStep] = useState(1);
-  const [statement, setStatement] = useState(1);
   const [dir, setDir] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -134,7 +122,7 @@ export function StudentIntakeForm({
       .then((d) => {
         if (d) {
           setData((cur) => ({ ...cur, ...(d.data as Data), startedAt: (d.data as Data).startedAt ?? cur.startedAt }));
-          setStep(d.step);
+          setStep(Math.min(TOTAL, d.step));
         }
       })
       .finally(() => {
@@ -196,9 +184,8 @@ export function StudentIntakeForm({
       const { schoolName: _s, notListed: _n, ...rest } = data.about;
       return check(stepAbout, { ...rest, lgaId: stateLgas.length ? rest.lgaId : rest.lgaId || "" });
     }
-    if (step === 2) return check(stepDreams, data.dreams);
-    if (step === 3) return check(stepHelp, data.help);
-    if (step === 4) return check(contactRules(age, data.help.deviceAccess, contactMode), data.contact);
+    if (step === 2) return check(stepProgramme, { programmeIds: data.dreams.programmeIds });
+    if (step === 3) return check(contactRules(age, "", contactMode), data.contact);
     return true;
   }
 
@@ -206,22 +193,25 @@ export function StudentIntakeForm({
     if (delta > 0 && !validateStep()) return;
     setDir(delta);
     setErrors({});
-    if (step === 5) {
-      const next = statement + delta;
-      if (next >= 1 && next <= 6) return setStatement(next);
-    }
-    const ns = Math.min(TOTAL, Math.max(1, step + delta));
-    if (ns === 5) setStatement(delta > 0 ? 1 : 6);
-    setStep(ns);
+    setStep(Math.min(TOTAL, Math.max(1, step + delta)));
     window.scrollTo({ top: 0 });
   }
 
   function payload() {
     const { schoolName: _s, notListed: _n, ...about } = data.about;
-    return { clientId: data.clientId, startedAt: data.startedAt, website: "", about, dreams: data.dreams, help: data.help, contact: data.contact, checkin: data.checkin };
+    return {
+      clientId: data.clientId,
+      startedAt: data.startedAt,
+      website: "",
+      about,
+      dreams: { programmeIds: data.dreams.programmeIds },
+      contact: data.contact,
+      checkin: { privacy: data.checkin.privacy },
+    };
   }
 
   function submit() {
+    if (!validateStep()) return;
     if (!data.checkin.privacy) {
       setErrors({ privacy: "privacy" });
       return;
@@ -248,10 +238,18 @@ export function StudentIntakeForm({
     });
   }
 
-  if (done) return <DoneScreen done={done} avatarKey={data.contact.avatarKey} locale={locale} />;
+  if (done)
+    return (
+      <DoneScreen
+        done={done}
+        avatarKey={data.contact.avatarKey}
+        locale={locale}
+        emails={byEmail ? { email: data.contact.email ?? "", guardianEmail: data.contact.guardianEmail ?? "" } : null}
+      />
+    );
 
-  const stepNames = ["about", "dreams", "help", "contact", "checkin"] as const;
-  const progress = (step - 1 + (step === 5 ? (statement - 1) / 6 : 0)) / TOTAL + 1 / TOTAL / 2;
+  const stepNames = ["about", "programme", "contact"] as const;
+  const progress = (step - 1) / TOTAL + 1 / TOTAL / 2;
 
   return (
     <MotionConfig reducedMotion="user">
@@ -276,7 +274,7 @@ export function StudentIntakeForm({
 
         <AnimatePresence mode="wait" custom={dir} initial={false}>
           <motion.div
-            key={step === 5 ? `5-${statement}` : step}
+            key={step}
             custom={dir}
             initial={{ opacity: 0, x: 12 * dir }}
             animate={{ opacity: 1, x: 0, transition: { duration: 0.22, ease: "easeOut" } }}
@@ -342,7 +340,7 @@ export function StudentIntakeForm({
                     <OtherState options={options} value={data.about.stateId} onChange={(id) => set("about", { stateId: id, lgaId: "", schoolId: "" })} />
                   )}
                 </Q>
-                {stateLgas.length > 0 && (
+                {stateLgas.length > 0 && (data.about.notListed || data.about.classLevel === "not_in_school") && (
                   <label className="field">
                     <span className="text-[16px] font-medium">{t("student.lga")}</span>
                     <select
@@ -377,41 +375,6 @@ export function StudentIntakeForm({
 
             {step === 2 && (
               <>
-                <label className="field">
-                  <span className="text-[16px] font-medium">{t("student.dream")}</span>
-                  <input
-                    className="input"
-                    maxLength={60}
-                    value={data.dreams.dreamCareer}
-                    onChange={(e) => set("dreams", { dreamCareer: e.target.value })}
-                    aria-invalid={!!errors.dreamCareer}
-                  />
-                  <span className="flex flex-wrap gap-2">
-                    {t("student.dreamSuggestions")
-                      .split("|")
-                      .map((s) => (
-                        <button key={s} type="button" className="rounded-[8px] bg-surface px-3 py-2 text-[14px]" onClick={() => set("dreams", { dreamCareer: s })}>
-                          {s}
-                        </button>
-                      ))}
-                  </span>
-                  {err("dreamCareer") && <span className="error" role="alert">{err("dreamCareer")}</span>}
-                </label>
-                <Q label={t("student.interests")} error={err("interests")} as="fieldset">
-                  <Chips
-                    multiple
-                    name={t("student.interests")}
-                    value={data.dreams.interests}
-                    onChange={(v) => set("dreams", { interests: v })}
-                    options={INTERESTS.map((i) => ({ value: i, label: t(`student.interestOptions.${i}`) }))}
-                  />
-                </Q>
-                <label className="field">
-                  <span className="text-[16px] font-medium">
-                    {t("student.communityDream")} <span className="font-normal text-muted">({tc("optional")})</span>
-                  </span>
-                  <textarea className="input" maxLength={200} value={data.dreams.communityDream} onChange={(e) => set("dreams", { communityDream: e.target.value })} />
-                </label>
                 <Q label={t("student.programme")} error={err("programmeIds")} as="fieldset">
                   <div className="grid gap-2">
                     {options.programmes.map((p) => {
@@ -441,51 +404,6 @@ export function StudentIntakeForm({
 
             {step === 3 && (
               <>
-                <Q label={t("student.needs")} error={err("needs")} as="fieldset">
-                  <Chips
-                    multiple
-                    name={t("student.needs")}
-                    value={data.help.needs}
-                    onChange={(v) => set("help", { needs: v })}
-                    options={NEEDS.map((n) => ({ value: n, label: t(`student.needOptions.${n}`) }))}
-                  />
-                </Q>
-                {data.help.needs.includes("school_subject") && (
-                  <label className="field">
-                    <span className="text-[16px] font-medium">{t("student.subject")}</span>
-                    <input className="input" value={data.help.schoolSubject} onChange={(e) => set("help", { schoolSubject: e.target.value })} />
-                  </label>
-                )}
-                {data.help.needs.includes("other") && (
-                  <label className="field">
-                    <span className="text-[16px] font-medium">{t("student.needsOther")}</span>
-                    <input className="input" value={data.help.needsOther} onChange={(e) => set("help", { needsOther: e.target.value })} />
-                  </label>
-                )}
-                <Q label={t("student.device")} error={err("deviceAccess")} as="fieldset">
-                  <Chips
-                    name={t("student.device")}
-                    value={data.help.deviceAccess}
-                    onChange={(v) => set("help", { deviceAccess: v })}
-                    options={DEVICES.map((d) => ({ value: d, label: t(`student.devices.${d}`) }))}
-                  />
-                </Q>
-              </>
-            )}
-
-            {step === 4 && (
-              <>
-                <Q label={t("student.language")} as="fieldset">
-                  <Chips
-                    name={t("student.language")}
-                    value={data.contact.language}
-                    onChange={(v) => set("contact", { language: v })}
-                    options={[
-                      { value: "en", label: "English" },
-                      { value: "yo", label: "Yorùbá" },
-                    ]}
-                  />
-                </Q>
                 {byEmail ? (
                   <label className="field">
                     <span className="text-[16px] font-medium">
@@ -553,51 +471,10 @@ export function StudentIntakeForm({
                     )}
                   </>
                 )}
-                <Q label={t("student.avatar")} as="fieldset">
-                  <div className="grid grid-cols-6 gap-2 sm:grid-cols-8" role="radiogroup" aria-label={t("student.avatar")}>
-                    {AVATARS.map((a) => (
-                      <button
-                        key={a}
-                        type="button"
-                        role="radio"
-                        aria-checked={data.contact.avatarKey === a}
-                        aria-label={a}
-                        onClick={() => set("contact", { avatarKey: a })}
-                        className={`grid aspect-square place-items-center rounded-full p-[3px] ${data.contact.avatarKey === a ? "ring-2 ring-ink" : ""}`}
-                      >
-                        <Avatar avatarKey={a} size={48} className="h-full w-full" />
-                      </button>
-                    ))}
-                  </div>
-                </Q>
               </>
             )}
 
-            {step === 5 && statement <= 5 && (
-              <div className="grid gap-10">
-                <div className="grid gap-2">
-                  <p className="text-[15px] text-muted">
-                    {t("student.checkinLead")} · {t("student.statementOf", { n: statement })}
-                  </p>
-                  <p className="serif text-[22px] leading-snug">{t(`student.q${statement}` as never)}</p>
-                </div>
-                <CircleScale
-                  label={t(`student.q${statement}` as never)}
-                  low={t("student.scaleLow")}
-                  high={t("student.scaleHigh")}
-                  value={data.checkin[`q${statement}` as "q1"]}
-                  onChange={(n) => {
-                    set("checkin", { [`q${statement}`]: n } as Partial<Data["checkin"]>);
-                    setTimeout(() => {
-                      setDir(1);
-                      setStatement((s) => s + 1);
-                    }, 220);
-                  }}
-                />
-              </div>
-            )}
-
-            {step === 5 && statement === 6 && (
+            {step === 3 && (
               <div className="grid gap-6">
                 <label className="flex min-h-12 items-start gap-3 text-[16px]">
                   <input
@@ -637,20 +514,16 @@ export function StudentIntakeForm({
       {/* "Next" pinned at the foot; "Back" as a text link */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
         <div className="mx-auto flex max-w-[720px] items-center justify-between gap-4">
-          {step > 1 || statement > 1 ? (
+          {step > 1 ? (
             <button type="button" className="uline min-h-12 text-[16px] font-medium" onClick={() => go(-1)}>
               {tc("back")}
             </button>
           ) : (
             <span />
           )}
-          {step === 5 && statement === 6 ? (
+          {step === TOTAL ? (
             <button type="button" className="btn btn--lg min-w-[200px]" onClick={submit} disabled={pending} aria-busy={pending}>
               {pending ? tc("sending") : t("student.submit")}
-            </button>
-          ) : step === 5 ? (
-            <button type="button" className="btn btn--lg min-w-[160px]" onClick={() => go(1)} disabled={!data.checkin[`q${statement}` as "q1"]}>
-              {tc("next")}
             </button>
           ) : (
             <button type="button" className="btn btn--lg min-w-[160px]" onClick={() => go(1)}>
@@ -778,15 +651,28 @@ function SchoolPicker({
   );
 }
 
-function DoneScreen({ done, avatarKey, locale }: { done: Done; avatarKey: string; locale: string }) {
+function DoneScreen({
+  done,
+  avatarKey,
+  locale,
+  emails,
+}: {
+  done: Done;
+  avatarKey: string;
+  locale: string;
+  /** The emails given at sign-up, in email mode (D-018); null in phone mode. */
+  emails: { email: string; guardianEmail: string } | null;
+}) {
   const t = useTranslations("join.student.done");
   const [reminded, setReminded] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [current, setCurrent] = useState(emails);
   const steps = [
     done.isAdult ? t("step1Adult") : t("step1", { guardianName: done.guardianName ?? "" }),
     t("step2"),
     t("step3"),
   ];
+  const handle = !done.queued ? done.contactHandle : undefined;
   // Moment 1 (DESIGN.md §8.5): the ring draws (600ms), the name appears, the steps arrive 60ms apart.
   return (
     <MotionConfig reducedMotion="user">
@@ -824,6 +710,33 @@ function DoneScreen({ done, avatarKey, locale }: { done: Done; avatarKey: string
             </motion.li>
           ))}
         </ol>
+
+        {handle && current && (
+          <section aria-labelledby="details-h" className="grid w-full max-w-[560px] gap-5 rounded-[16px] bg-surface p-5">
+            <h2 id="details-h" className="text-[18px] font-medium">
+              {t("detailsTitle")}
+            </h2>
+            {!done.isAdult && (
+              <EmailRow
+                label={t("guardianEmail")}
+                value={current.guardianEmail}
+                required
+                guardian
+                submit={(v) => changeContactAction(locale, handle, { guardianEmail: v })}
+                onSaved={(v) => setCurrent({ ...current, guardianEmail: v })}
+              />
+            )}
+            <EmailRow
+              label={t("yourEmail")}
+              value={current.email}
+              required={done.isAdult}
+              submit={(v) => changeContactAction(locale, handle, { email: v })}
+              onSaved={(v) => setCurrent({ ...current, email: v })}
+            />
+            <p className="text-[15px] text-muted">{current.email ? t("profileNext") : t("profileNeedsEmail")}</p>
+          </section>
+        )}
+
         <div className="flex flex-wrap items-center gap-6">
           <Link href="/" className="btn btn--lg">
             {t("home")}
