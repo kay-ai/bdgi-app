@@ -1,8 +1,20 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["lhr1"],
+  "regions": [
+    "lhr1"
+  ],
   "crons": [
-    { "path": "/api/cron/messages", "schedule": "5 6 * * *" },
-    { "path": "/api/cron/consent-reminders", "schedule": "0 8 * * *" }
+    {
+      "path": "/api/cron/messages",
+      "schedule": "5 6 * * *"
+    },
+    {
+      "path": "/api/cron/consent-reminders",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/speech",
+      "schedule": "30 6 * * *"
+    }
   ]
 }

@@ -23,6 +23,8 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1158.0",
+    "@aws-sdk/client-transcribe": "3.1158.0",
     "@electric-sql/pglite": "^0.5.16",
     "@hookform/resolvers": "^7.0.6",
     "clsx": "^2.1.1",

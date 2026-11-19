@@ -345,6 +345,9 @@ export const speechAttempt = pgTable(
     motionId: uuid("motion_id").references(() => motion.id),
     side: text("side", { enum: ["for", "against", "open"] }).notNull(),
     channel: text("channel", { enum: ["web", "whatsapp"] }).notNull(),
+    /** placement: the first "let's hear you" speech; lesson: a drill inside a lesson; free: open practice. */
+    kind: text("kind", { enum: ["placement", "lesson", "free"] }).notNull().default("free"),
+    lessonKey: text("lesson_key"),
     audioKey: text("audio_key"),
     durationSeconds: numeric("duration_seconds"),
     transcript: text("transcript"), // enc
@@ -363,6 +366,40 @@ export const speechAttempt = pgTable(
     ...timestamps,
   },
   (t) => [index("speech_person_created_idx").on(t.personId, t.createdAt.desc())],
+);
+
+/** How strong each student is at each coaching skill (1.0–5.0), updated after every scored speech. */
+export const coachSkill = pgTable(
+  "coach_skill",
+  {
+    id: id(),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => person.id),
+    skillKey: text("skill_key").notNull(),
+    rating: numeric("rating", { precision: 3, scale: 2 }).notNull(),
+    assessments: integer("assessments").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("coach_skill_uq").on(t.personId, t.skillKey)],
+);
+
+/** A student's progress through each lesson of the coaching path. */
+export const coachLesson = pgTable(
+  "coach_lesson",
+  {
+    id: id(),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => person.id),
+    lessonKey: text("lesson_key").notNull(),
+    status: text("status", { enum: ["started", "passed"] }).notNull().default("started"),
+    attempts: integer("attempts").notNull().default(0),
+    bestScore: integer("best_score"),
+    passedAt: tz("passed_at"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("coach_lesson_uq").on(t.personId, t.lessonKey)],
 );
 
 export const botState = pgTable("bot_state", {

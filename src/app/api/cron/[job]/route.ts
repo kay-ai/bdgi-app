@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { runConsentReminders } from "@/server/services/consent-reminders";
 import { sendDueMessages } from "@/server/services/messaging";
+import { sweepSpeech } from "@/server/services/speech";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -13,6 +14,7 @@ export const maxDuration = 60;
 const JOBS: Record<string, () => Promise<unknown>> = {
   messages: () => sendDueMessages(),
   "consent-reminders": () => runConsentReminders(),
+  speech: () => sweepSpeech(),
 };
 
 function authorised(req: Request) {

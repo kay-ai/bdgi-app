@@ -281,6 +281,8 @@ export const settings: Record<string, unknown> = {
   donation_impact_lines: {},
   ai_enabled: true,
   ai_monthly_attempt_cap: 8,
+  ai_max_seconds: 150,
+  ai_min_seconds: 20,
   aws_monthly_budget_usd: 150,
   max_mentees: 2,
   hub_launch_date: "",

@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { signOutAction } from "@/app/actions/auth";
 import { requireStaff } from "@/server/auth/current";
-import { can, hasRole } from "@/server/permissions/can";
+import { can, hasRole, isStaff } from "@/server/permissions/can";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false, follow: false }, title: "Console" };
@@ -15,7 +15,11 @@ export default async function ConsoleLayout({ children, params }: { children: Re
   const actor = await requireStaff("/console");
   const t = await getTranslations("console");
   const items = [
+    { href: "/console/students", label: t("students"), show: can(actor, "intake.review") },
+    { href: "/console/volunteers", label: t("volunteers"), show: can(actor, "volunteer.view_applications") && isStaff(actor) },
+    { href: "/console/schools", label: t("schools"), show: can(actor, "school.view") && isStaff(actor) },
     { href: "/console/donations", label: t("donations"), show: can(actor, "donation.view") },
+    { href: "/console/messages", label: t("messages"), show: can(actor, "user.manage") },
     { href: "/console/admin/users", label: t("users"), show: can(actor, "user.manage") },
   ].filter((i) => i.show);
 

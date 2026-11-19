@@ -676,6 +676,10 @@ a.card:hover { box-shadow: none; transform: translateY(-2px); border-color: var(
 .badge--failed { background: #f6dcd9; color: #8a1c16; }
 .badge--refunded { background: #ece6f5; color: #4a3570; }
 .badge--initiated { background: #fff1c7; color: #5c4600; }
+.badge--active, .badge--accepted { background: #dcefe6; color: #13523c; }
+.badge--pending_review, .badge--pending_consent, .badge--applied, .badge--new, .badge--references_pending, .badge--interview, .badge--training, .badge--contacted { background: #fff1c7; color: #5c4600; }
+.badge--declined, .badge--left { background: #f6dcd9; color: #8a1c16; }
+.badge--paused, .badge--waitlisted { background: #ece6f5; color: #4a3570; }
 
 /* Console tables: scroll inside their panel on narrow screens, never the page. */
 .table-wrap { overflow-x: auto; border-radius: var(--r-md); background: var(--p-bg); }

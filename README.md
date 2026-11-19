@@ -56,6 +56,10 @@ Copy `.env.example` to `.env.local`. Everything has a safe local default. Values
 | `*_PROVIDER` | `console` locally. `PAYMENTS_PROVIDER=paystack` uses Paystack; messaging providers arrive with M8 |
 | `PAYSTACK_SECRET_KEY` | Paystack secret key. Test key (`sk_test_…`) locally and on staging; signs and checks webhooks |
 | `PAYSTACK_ALLOW_LIVE` | `true` only in production secrets. Without it a `sk_live_…` key is refused |
+| `AI_PROVIDER` | `console` locally (sample feedback). `groq` scores speeches with `GROQ_MODEL` (default `openai/gpt-oss-120b`) |
+| `GROQ_API_KEY` | Groq key, for `AI_PROVIDER=groq` and `TRANSCRIBE_PROVIDER=groq` |
+| `TRANSCRIBE_PROVIDER` | `console` locally (a fixed practice speech). `aws` = Amazon Transcribe (needs `STORAGE_PROVIDER=s3`); `groq` = Groq Whisper |
+| `STORAGE_PROVIDER` | Where recordings wait to be scored: `local` (`.data/uploads`) or `s3` (`S3_BUCKET`, `AWS_REGION`; add a 1-day lifecycle rule). Recordings are deleted after scoring |
 | `CRON_SECRET` | Long random string. Vercel Cron sends it as `Authorization: Bearer …` to `/api/cron/*`. **Required in production**; locally the jobs run without it |
 
 ### Sign-in
@@ -68,9 +72,13 @@ pnpm auth:invite-admin -- --email you@example.org --first Ada --surname Obi
 
 It emails (and prints) a link to set a password; the first sign-in then sets up 2-step and shows ten backup codes once. See DECISIONS.md D-013.
 
+### Speech coach
+
+Students open **Speech coach** from their Hub (`/app/coach`). The first two-minute speech rates nine skills; after that the coach picks the next lesson for the weakest skill, and every speech moves the ratings. With the default `console` providers the whole flow works without keys: whatever is recorded, the coach "hears" a fixed practice speech and gives sample feedback. To hear real speech and get real feedback, set `GROQ_API_KEY`, `AI_PROVIDER=groq` and `TRANSCRIBE_PROVIDER=groq` (or `aws` with S3). Recording needs a real microphone, so try it on a phone or a normal browser. See DECISIONS.md D-015.
+
 ### Scheduled jobs
 
-Vercel Cron calls `/api/cron/messages` (send retries and messages held by quiet hours) and `/api/cron/consent-reminders` (guardian reminders on day 2 and 6, a staff task on day 10). Locally, run one by opening it in the browser, for example `http://localhost:3000/api/cron/consent-reminders`. See DECISIONS.md D-014.
+Vercel Cron calls `/api/cron/messages` (send retries and messages held by quiet hours), `/api/cron/consent-reminders` (guardian reminders on day 2 and 6, a staff task on day 10) and `/api/cron/speech` (scores any recording that was missed). Locally, run one by opening it in the browser, for example `http://localhost:3000/api/cron/consent-reminders`. See DECISIONS.md D-014.
 
 ## Checks
 
@@ -82,7 +90,7 @@ pnpm typecheck
 pnpm test
 ```
 
-The tests include the M3 acceptance checks (`tests/permissions.test.ts` reads the role × action table from spec/03 and checks every cell; `tests/auth.test.ts` covers codes, the profile chooser, staff 2-step and the volunteer student view) and the M2 checks (`tests/donations.test.ts`): they run the Paystack flow against an in-memory database with Paystack's API replaced by a fake, so they need no keys or network. The M4 checks are `tests/join-consent.test.ts` (intake, guardian permission, the five-try lock, withdrawal, duplicates, reminders, quiet hours, STOP) and `tests/messaging-retry.test.ts` (retries and SMS fallback).
+The tests include the M3 acceptance checks (`tests/permissions.test.ts` reads the role × action table from spec/03 and checks every cell; `tests/auth.test.ts` covers codes, the profile chooser, staff 2-step and the volunteer student view) and the M2 checks (`tests/donations.test.ts`): they run the Paystack flow against an in-memory database with Paystack's API replaced by a fake, so they need no keys or network. The M4 checks are `tests/join-consent.test.ts` (intake, guardian permission, the five-try lock, withdrawal, duplicates, reminders, quiet hours, STOP) and `tests/messaging-retry.test.ts` (retries and SMS fallback). `tests/speech-coach.test.ts` covers the coach: delivery measurements on fixture word lists, the tailored path, consent and the monthly cap, the fallback when the model's answer is unusable, prompt injection, the safeguarding flag, and that the recording is gone after scoring.
 
 ```bash
 pnpm test:e2e
@@ -110,6 +118,7 @@ src/
   lib/                     phone numbers, encryption, formatting
   offline/                 Dexie store for intake drafts and the offline queue
   server/services/         all reads and writes; every write is audited
+  server/coach/            speech coach: curriculum, measurements, tailoring, prompt
   server/auth/             sessions, codes, staff password + 2-step, invites
   server/permissions/      can(), the spec/03 matrix, SQL scopes
   server/seed/             seed data (programmes, team, FAQs, templates, redirects)
@@ -131,6 +140,8 @@ Built and checked in the browser (1440 and 375 wide):
 - Donations (M2): Paystack hosted checkout for one-off and monthly gifts, signed and idempotent webhook, PDF receipts by email, public receipt check, fundraising progress on programme pages, and `/console/donations` (development only until sign-in).
 
 - Sign-in and permissions (M3): phone and email codes, staff password + 2-step, profile chooser, spec/03 permission matrix.
+- Console lists ahead of M5: students, volunteers and schools with approve/decline; an admin-only Messages page showing sign-in codes and permission links to pass on by hand until WhatsApp/SMS are connected; guardians can switch AI speech practice on or off in their Hub (D-016).
+- Speech coach (from spec/12, ahead of M5): a first speech that rates nine skills, a lesson path tailored to the weakest skill, recorder, scorecard with a rewritten line, safeguarding flag, monthly cap.
 - Join and consent (M4): messaging core with quiet hours, retries and fallback, guardian reminders and staff reissue, scheduled jobs, and the 360 px intake journey in Playwright.
 
 Next milestones (spec/14): M5 onwards, the Hub and the rest of the console.
