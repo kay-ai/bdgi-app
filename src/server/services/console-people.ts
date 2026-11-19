@@ -35,7 +35,7 @@ const surnameOf = (enc: string | null) => {
 
 export const STUDENT_STATUSES = ["pending_review", "pending_consent", "active", "waitlisted", "paused", "declined", "left"] as const;
 
-const isStudent = sql`exists (select 1 from person_role r where r.person_id = ${s.person.id} and r.role = 'student' and r.revoked_at is null)`;
+export const isStudent = sql`exists (select 1 from person_role r where r.person_id = ${s.person.id} and r.role = 'student' and r.revoked_at is null)`;
 
 export async function listStudents(actor: Actor | null, f: PeopleFilters) {
   assertCan(actor, "intake.review");
@@ -206,7 +206,7 @@ export async function decideVolunteer(actor: Actor | null, personId: string, dec
 
 export const REQUEST_STATUSES = ["new", "contacted", "accepted", "declined"] as const;
 
-function stateScope(actor: Actor, col: Parameters<typeof eq>[0]): SQL {
+export function stateScope(actor: Actor, col: Parameters<typeof eq>[0]): SQL {
   if (hasRole(actor, "programme_manager", "safeguarding_lead", "admin")) return sql`true`;
   const states = actorStates(actor);
   return states.length ? inArray(col, states) : sql`false`;

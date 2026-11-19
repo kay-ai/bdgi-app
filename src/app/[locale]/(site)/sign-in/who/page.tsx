@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Avatar } from "@/components/ui/Avatar";
-import { choosePersonAction, signOutAction } from "@/app/actions/auth";
+import { choosePersonAction } from "@/app/actions/auth";
+import { SignOutForm } from "@/components/SignOutForm";
 import { currentSession, safeNext } from "@/server/auth/current";
 import { profilesForUser } from "@/server/auth/sessions";
 
@@ -51,11 +52,9 @@ export default async function WhoPage({
               </li>
             ))}
           </ul>
-          <form action={signOutAction}>
-            <button type="submit" className="uline text-[15px]">
-              {t("notYou")}
-            </button>
-          </form>
+          <SignOutForm locale={locale} className="uline text-[15px]">
+            {t("notYou")}
+          </SignOutForm>
         </div>
       </div>
     </section>
