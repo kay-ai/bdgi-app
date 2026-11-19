@@ -15,3 +15,7 @@ next-env.d.ts
 .vercel
 .env*
 !.env.example
+
+.next-e2e/
+test-results/
+playwright-report/

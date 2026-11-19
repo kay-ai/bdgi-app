@@ -239,6 +239,8 @@ export async function submitStudent(ctx: Ctx, input: StudentIntake): Promise<Int
         language: contact.language,
         vars: { guardianName: contact.guardianName, studentFirstName: studentFirst, schoolName, link, code, orgPhone },
         eventKey: `consent.request:${personId}:${Date.now()}`,
+        // The link and code are secrets: kept only inside the encrypted body.
+        storeVars: false,
       }, tx);
       if (id) messageIds.push(id);
     }
@@ -323,6 +325,7 @@ export async function remindGuardian(ctx: Ctx, personId: string) {
       code,
     },
     eventKey: `consent.reminder:${personId}:${Date.now()}`,
+    storeVars: false,
   });
   if (id) await dispatch([id]);
   await audit(db, ctx, { action: "consent.remind", entityType: "consent", entityId: row.consent.id, subjectPersonId: personId });

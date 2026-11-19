@@ -577,8 +577,16 @@ export const messageTemplates = [
       "email"
     ],
     "subjectEn": "Thank you for your gift to BGDI",
-    "bodyEn": "HTML email with amount, date, reference, designation, receipt PDF attached.",
-    "variables": [],
+    "bodyEn": "Thank you for your gift to Black Girl's Dream Initiative.\n\nAmount: {{amount}}\nDate: {{date}}\nWhere it goes: {{designation}}\nReference: {{reference}}\n\nYour receipt {{receiptCode}} is attached as a PDF. Anyone can check it at {{verifyUrl}}{{manage}}\n\nEvery BGDI programme is free for students and schools because of gifts like yours.",
+    "variables": [
+      "amount",
+      "date",
+      "designation",
+      "reference",
+      "receiptCode",
+      "verifyUrl",
+      "manage"
+    ],
     "allowBeforeConsent": true,
     "ignoresQuietHours": false,
     "note": null
@@ -641,6 +649,50 @@ export const messageTemplates = [
     "allowBeforeConsent": true,
     "ignoresQuietHours": false,
     "note": null
+  },
+  {
+    "key": "staff.password_reset",
+    "category": "authentication",
+    "channels": [
+      "email"
+    ],
+    "subjectEn": "Reset your BGDI Hub password",
+    "bodyEn": "Someone asked to reset the password for your BGDI Hub staff account. If it was you, set a new password here: {{link}} (valid 30 minutes). If it wasn't, you can ignore this email.",
+    "variables": [
+      "link"
+    ],
+    "allowBeforeConsent": true,
+    "ignoresQuietHours": true,
+    "note": "Added in M3 (spec/03 §1.3)"
+  },
+  {
+    "key": "staff.locked",
+    "category": "authentication",
+    "channels": [
+      "email"
+    ],
+    "subjectEn": "Your BGDI Hub account is locked for {{minutes}} minutes",
+    "bodyEn": "There were five wrong sign-in attempts on your BGDI Hub staff account, so it is locked for {{minutes}} minutes. If this wasn't you, reset your password: {{link}}",
+    "variables": [
+      "minutes",
+      "link"
+    ],
+    "allowBeforeConsent": true,
+    "ignoresQuietHours": true,
+    "note": "Added in M3 (spec/03 §1.3)"
+  },
+  {
+    "key": "staff.safeguarding_granted",
+    "category": "utility",
+    "channels": [
+      "email"
+    ],
+    "subjectEn": "Safeguarding lead role granted",
+    "bodyEn": "An admin has given the safeguarding lead role to another person in the BGDI Hub. Check the audit log in the console if you did not expect this.",
+    "variables": [],
+    "allowBeforeConsent": true,
+    "ignoresQuietHours": false,
+    "note": "Added in M3 (spec/03 §4.1 note)"
   },
   {
     "key": "staff.digest",

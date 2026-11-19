@@ -1,5 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq, like } from "drizzle-orm";
 import { db, schema as s } from "../src/db";
+import { encrypt, humanCode, lookupHash } from "../src/lib/crypto";
 import * as data from "../src/server/seed/data";
 import { messageTemplates } from "../src/server/seed/templates";
 
@@ -124,6 +125,12 @@ async function main() {
       })
       .onConflictDoNothing({ target: s.messageTemplate.key });
   }
+  // M2 replaced the receipt placeholder body; update it unless staff have already edited it.
+  const receipt = messageTemplates.find((t) => t.key === "donation.receipt")!;
+  await db
+    .update(s.messageTemplate)
+    .set({ bodyEn: receipt.bodyEn, variables: [...receipt.variables] })
+    .where(and(eq(s.messageTemplate.key, "donation.receipt"), like(s.messageTemplate.bodyEn, "HTML email with%")));
   for (const [from, to, code] of data.redirects) {
     await db
       .insert(s.redirect)
@@ -148,6 +155,39 @@ async function main() {
           notes: "is_demo",
         });
       }
+    }
+
+    // Five demo donations for the console (spec/14 §5). Fictional supporters, console provider.
+    const demoGifts = [
+      { name: "Demo Supporter Adaora", amount: 5000, frequency: "one_off", days: 3, slug: null },
+      { name: "Demo Supporter Bayo", amount: 10000, frequency: "monthly", days: 12, slug: "debate-and-public-speaking" },
+      { name: "Demo Supporter Chiamaka", amount: 2000, frequency: "one_off", days: 40, slug: null },
+      { name: "Demo Supporter Dapo", amount: 25000, frequency: "one_off", days: 75, slug: "eko-dara" },
+      { name: "Demo Supporter Efe", amount: 50000, frequency: "one_off", days: 160, slug: null },
+    ] as const;
+    for (const [i, g] of demoGifts.entries()) {
+      const email = `demo-supporter-${i + 1}@example.test`;
+      const hash = lookupHash(email);
+      if ((await db.select({ id: s.supporter.id }).from(s.supporter).where(eq(s.supporter.emailHash, hash))).length) continue;
+      const [sup] = await db
+        .insert(s.supporter)
+        .values({ name: g.name, email: encrypt(email), emailHash: hash, wantsUpdates: i % 2 === 0, notes: "is_demo" })
+        .returning();
+      const paidAt = new Date(Date.now() - g.days * 86_400_000);
+      await db.insert(s.donation).values({
+        supporterId: sup!.id,
+        reference: `BGDI-DEMO${humanCode(5)}`,
+        amountMinor: g.amount * 100,
+        currency: "NGN",
+        frequency: g.frequency,
+        designationProgrammeId: g.slug ? progBySlug[g.slug]!.id : null,
+        status: "paid",
+        provider: "console",
+        providerReference: "demo",
+        paidAt,
+        receiptCode: humanCode(),
+        createdAt: paidAt,
+      });
     }
   }
 

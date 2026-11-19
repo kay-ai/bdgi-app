@@ -13,3 +13,6 @@ export const formatDate = (iso: string | Date, locale = "en") =>
   new Intl.DateTimeFormat(locale === "yo" ? "yo-NG" : "en-NG", { day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Lagos" }).format(
     typeof iso === "string" ? new Date(iso) : iso,
   );
+
+/** Minor units in their own currency. NGN and USD are never added together (spec/11 §4). */
+export const money = (minor: number, currency: string) => (currency === "USD" ? usd(minor) : naira(minor));

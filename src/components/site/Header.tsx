@@ -125,6 +125,9 @@ export function Header({ programmes }: { programmes: NavProgramme[] }) {
         </nav>
         <div className="site-header__end" onMouseEnter={() => intent(null, 150)}>
           <LanguageSwitch className="hide-md" />
+          <Link href="/sign-in" className="uline hide-md" aria-current={current("/sign-in")}>
+            {t("common.signIn")}
+          </Link>
           <Link href="/donate" className="uline hide-md">
             {t("common.donate")}
           </Link>
@@ -199,6 +202,9 @@ export function Header({ programmes }: { programmes: NavProgramme[] }) {
           <div className="mt-8 grid gap-6">
             <Link href="/join" className="btn btn--lg btn--block">
               {t("common.joinProgramme")}
+            </Link>
+            <Link href="/sign-in" className="btn btn--lg btn--block btn--plain">
+              {t("common.signIn")}
             </Link>
             <LanguageSwitch />
           </div>

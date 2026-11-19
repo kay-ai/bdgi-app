@@ -27,7 +27,8 @@ function createPostgres(url: string): Db {
  */
 function createPglite(): Db {
   const dir = process.env.PGLITE_DIR ?? path.join(process.cwd(), ".data", "pglite");
-  mkdirSync(path.dirname(dir), { recursive: true });
+  // "memory://" (used by the tests) keeps the database in memory only.
+  if (!dir.startsWith("memory://")) mkdirSync(path.dirname(dir), { recursive: true });
 
   let current: { client: PGlite; db: Db; dead: boolean } | null = null;
 

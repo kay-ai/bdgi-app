@@ -1,8 +1,9 @@
 import "server-only";
 import { db, schema as s } from "@/db";
 
-export type Actor = { personId: string; roles: string[] } | null;
-export type Ctx = { actor: Actor; locale: "en" | "yo"; ip?: string | null; userAgent?: string | null };
+import type { Actor } from "@/server/permissions/can";
+
+export type Ctx = { actor: Actor | null; locale: "en" | "yo"; ip?: string | null; userAgent?: string | null };
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
