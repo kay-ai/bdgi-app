@@ -7,7 +7,7 @@ import { Logo } from "@/components/site/Logo";
 import { SignOutForm } from "@/components/SignOutForm";
 import { currentSession, requireActor } from "@/server/auth/current";
 import { profilesForUser } from "@/server/auth/sessions";
-import { isStaff } from "@/server/permissions/can";
+import { hasRole, isStaff } from "@/server/permissions/can";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,6 +35,11 @@ export default async function HubLayout({ children, params }: { children: ReactN
             <Logo label={t("meta.siteName")} height={32} />
           </Link>
           <div className="flex items-center gap-4 text-[15px]">
+            {hasRole(actor, "student") && (
+              <Link href="/app/profile" className="uline">
+                {t("hub.profileLink")}
+              </Link>
+            )}
             {isStaff(actor) && (
               <Link href="/console" className="uline">
                 {t("hub.toConsole")}

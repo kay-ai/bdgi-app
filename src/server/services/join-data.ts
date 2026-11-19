@@ -40,3 +40,18 @@ export function readRemindHandle(handle: string): string | null {
   if (!id || !sig) return null;
   return secureCompare(sig, lookupHash(`remind:${id}`).slice(0, 24)) ? id : null;
 }
+
+/**
+ * Lets the thank-you screen change the emails it was given (D-019) for 7 days after sign-up, without
+ * signing in. Only the person who submitted the form holds it.
+ */
+const CONTACT_HANDLE_DAYS = 7;
+export function contactHandle(personId: string, now = Date.now()) {
+  const exp = Math.floor(now / 1000) + CONTACT_HANDLE_DAYS * 86400;
+  return `${personId}.${exp}.${lookupHash(`contact:${personId}:${exp}`).slice(0, 24)}`;
+}
+export function readContactHandle(handle: string, now = Date.now()): string | null {
+  const [id, exp, sig] = handle.split(".");
+  if (!id || !exp || !sig || Number(exp) * 1000 < now) return null;
+  return secureCompare(sig, lookupHash(`contact:${id}:${exp}`).slice(0, 24)) ? id : null;
+}

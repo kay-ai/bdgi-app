@@ -131,8 +131,8 @@ export async function consoleDashboard(actor: Actor, now = new Date()) {
       see.sessions
         ? db
             .select({
-              today: sql<number>`count(*) filter (where ${s.session.startsAt} >= ${today} and ${s.session.startsAt} < ${new Date(today.getTime() + DAY)})::int`,
-              week: sql<number>`count(*) filter (where ${s.session.startsAt} >= ${week} and ${s.session.startsAt} < ${new Date(week.getTime() + 7 * DAY)})::int`,
+              today: sql<number>`count(*) filter (where ${s.session.startsAt} >= ${today.toISOString()}::timestamptz and ${s.session.startsAt} < ${new Date(today.getTime() + DAY).toISOString()}::timestamptz)::int`,
+              week: sql<number>`count(*) filter (where ${s.session.startsAt} >= ${week.toISOString()}::timestamptz and ${s.session.startsAt} < ${new Date(week.getTime() + 7 * DAY).toISOString()}::timestamptz)::int`,
               unmarked: sql<number>`count(*) filter (where ${s.session.status} = 'held' and not exists (select 1 from attendance a where a.session_id = ${s.session.id}))::int`,
             })
             .from(s.session)

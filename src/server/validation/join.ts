@@ -32,6 +32,7 @@ export const NEEDS = ["speaking_up", "building_arguments", "confidence", "resear
 export const DEVICES = ["own_smartphone", "shared_smartphone", "basic_phone", "school_computer", "none"] as const;
 export const RELATIONSHIPS = ["mother", "father", "aunt", "uncle", "grandparent", "sibling_adult", "other"] as const;
 export const AVATARS = Array.from({ length: 24 }, (_, i) => `a${String(i + 1).padStart(2, "0")}`);
+const AVATAR_KEY = z.string().regex(/^a(0[1-9]|1\d|2[0-4])$/);
 
 export const stepAbout = z
   .object({
@@ -50,6 +51,11 @@ export const stepAbout = z
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["schoolId"], message: "school" });
     }
   });
+
+/** Sign-up step 2: just the programme (D-019). */
+export const stepProgramme = z.object({
+  programmeIds: z.array(z.string().uuid()).min(1, "pickOne"),
+});
 
 export const stepDreams = z.object({
   dreamCareer: z.string().trim().min(2, "dream").max(60, "dream"),
@@ -76,8 +82,9 @@ export const stepContactBase = z.object({
   guardianRelationship: z.enum(RELATIONSHIPS).or(z.literal("")),
   guardianPhone: phone,
   guardianEmail: email.default(""),
-  guardianChannel: z.enum(["whatsapp", "sms"]),
-  avatarKey: z.string().regex(/^a(0[1-9]|1\d|2[0-4])$/),
+  guardianChannel: z.enum(["whatsapp", "sms"]).default("whatsapp"),
+  // Chosen on the Hub profile; sign-up gives a random one.
+  avatarKey: AVATAR_KEY.default("a01"),
 });
 
 /**
@@ -94,10 +101,9 @@ export const contactRules = (age: number, deviceAccess: string, mode: "email" | 
     } else if (mode === "email" && !v.email) {
       ctx.addIssue({ code: "custom", path: ["email"], message: "email" });
     }
-    if (age < 18 && v.email && v.guardianEmail && v.email === v.guardianEmail && deviceAccess !== "shared_smartphone") {
-      ctx.addIssue({ code: "custom", path: ["email"], message: "sameEmail" });
-    }
-    if (v.phone && v.guardianPhone && v.phone === v.guardianPhone && deviceAccess !== "shared_smartphone") {
+    // Families often share one email address, so the same email for both is allowed. Sign-up no
+    // longer asks about phones (D-019), so a shared number is only refused when we know it isn't shared.
+    if (v.phone && v.guardianPhone && v.phone === v.guardianPhone && deviceAccess && deviceAccess !== "shared_smartphone") {
       ctx.addIssue({ code: "custom", path: ["phone"], message: "samePhone" });
     }
   });
@@ -109,20 +115,43 @@ export const stepCheckin = z.object({
   q3: answer,
   q4: answer,
   q5: answer,
-  privacy: z.literal(true, { errorMap: () => ({ message: "privacy" }) }),
 });
 
-/** The full submission, validated again on the server. */
+const privacy = z.literal(true, { errorMap: () => ({ message: "privacy" }) });
+
+/**
+ * The Hub profile (D-019): what sign-up no longer asks. Dreams, what she'd like help with,
+ * the five check-in statements (her baseline) and a picture.
+ */
+export const studentProfile = z.object({
+  dreams: stepDreams.omit({ programmeIds: true }),
+  help: stepHelp,
+  checkin: stepCheckin,
+  avatarKey: AVATAR_KEY,
+});
+export type StudentProfile = z.infer<typeof studentProfile>;
+
+/** Changing an email after sign-up, on the thank-you screen or the Hub profile. */
+export const contactChange = z.object({
+  email: email.optional(),
+  guardianEmail: z.string().trim().toLowerCase().email("email").max(200).optional(),
+});
+export type ContactChange = z.infer<typeof contactChange>;
+
+/**
+ * The submission, validated again on the server. Sign-up sends the essentials (D-019). The longer
+ * answers stay optional so a submission queued offline by the older, longer form still goes through.
+ */
 export const studentIntake = z.object({
   clientId: z.string().uuid(),
   startedAt: z.number(),
   website: z.string().max(0).optional(), // honeypot
   source: z.string().max(16).optional(),
   about: stepAbout,
-  dreams: stepDreams,
-  help: stepHelp,
+  dreams: stepProgramme.merge(stepDreams.omit({ programmeIds: true }).partial()),
+  help: stepHelp.optional(),
   contact: stepContactBase,
-  checkin: stepCheckin,
+  checkin: stepCheckin.partial().extend({ privacy }),
 });
 export type StudentIntake = z.infer<typeof studentIntake>;
 

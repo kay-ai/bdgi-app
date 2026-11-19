@@ -136,16 +136,18 @@ export const intakeResponse = pgTable("intake_response", {
     .notNull()
     .unique()
     .references(() => person.id),
-  dreamCareer: text("dream_career").notNull(),
-  interests: text("interests").array().notNull(),
+  // Sign-up asks only for the essentials (D-019); the rest is filled in on the Hub profile.
+  dreamCareer: text("dream_career"),
+  interests: text("interests").array().notNull().default([]),
   communityDream: text("community_dream"),
-  needs: text("needs").array().notNull(),
+  needs: text("needs").array().notNull().default([]),
   needsOther: text("needs_other"),
   schoolSubject: text("school_subject"),
   programmeIds: uuid("programme_ids").array().notNull(),
-  hasOwnPhone: boolean("has_own_phone").notNull(),
-  deviceAccess: text("device_access").notNull(),
+  hasOwnPhone: boolean("has_own_phone"),
+  deviceAccess: text("device_access"),
   anythingElse: text("anything_else"),
-  completedAt: tz("completed_at").notNull().defaultNow(),
+  /** When the girl finished her profile; null until then. */
+  completedAt: tz("completed_at"),
   ...timestamps,
 });
