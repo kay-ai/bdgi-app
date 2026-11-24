@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { AttemptWaiting, SpeakButton } from "@/components/coach/CoachClient";
+import { AttemptWaiting, ListenFeedback, SpeakButton } from "@/components/coach/CoachClient";
 import { Bar, requireStudent, Stars } from "@/components/coach/parts";
 import { SKILL, SKILLS } from "@/server/coach/curriculum";
-import { coachHome, getAttempt } from "@/server/services/speech";
+import { coachHome, feedbackScript, getAttempt } from "@/server/services/speech";
 
 // Personal to the signed-in student: never pre-rendered or cached.
 export const dynamic = "force-dynamic";
@@ -73,6 +73,7 @@ export default async function AttemptPage({ params }: { params: Promise<{ locale
         <Stars n={a.stars ?? 1} label={t("card.stars", { n: a.stars ?? 1 })} size={36} />
         <p className="serif text-[22px] leading-snug">{f.encouragement}</p>
         {f.usedFallback && <p className="text-[14px] text-muted">{t("card.fallback")}</p>}
+        <ListenFeedback id={a.id} text={feedbackScript(f)} />
       </header>
 
       {f.focus && a.lesson && (

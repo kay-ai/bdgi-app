@@ -23,6 +23,7 @@ export default async function StudentsPage({ params, searchParams }: { params: P
   const list = await listStudents(actor, { status, q, page: Number(one(sp.page) ?? 1) || 1 });
   const all = Object.values(list.counts).reduce((a, b) => a + b, 0);
   const seeMessages = can(actor, "user.manage");
+  const seeSpeech = can(actor, "speech.view");
   const st = (v: string) => t(`people.st_${v}` as "people.st_active");
 
   return (
@@ -66,6 +67,11 @@ export default async function StudentsPage({ params, searchParams }: { params: P
                       {r.firstName} {r.surname}
                     </span>
                     <div className="text-[13px] text-muted">{[r.age ? t("people.age", { n: r.age }) : null, r.classLevel].filter(Boolean).join(" · ")}</div>
+                    {seeSpeech && (r.aiPractice || (r.age ?? 0) >= 18) && (
+                      <Link href={`/console/ai/student/${r.id}`} className="uline text-[13px]">
+                        {t("people.speechLink")}
+                      </Link>
+                    )}
                   </td>
                   <td>
                     {r.school ?? "–"}

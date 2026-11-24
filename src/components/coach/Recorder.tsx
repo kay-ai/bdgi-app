@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
+import { queueSpeech, uploadSpeech } from "./offline-queue";
 
 type Props = {
   kind: "placement" | "lesson" | "free";
@@ -14,9 +15,11 @@ type Props = {
   minSeconds: number;
   /** Disable the record button until the parent has what it needs (e.g. a motion picked). */
   ready?: boolean;
+  /** Shown in the offline queue ("Waiting to send: …"). */
+  title?: string;
 };
 
-type Phase = "idle" | "prep" | "recording" | "review" | "sending";
+type Phase = "idle" | "prep" | "recording" | "review" | "sending" | "queued";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
@@ -27,7 +30,7 @@ function pickMime() {
 }
 
 /** spec/12 §2 steps 2–4: get ready, record (timer, level meter, hard stop), listen back, send. */
-export function Recorder({ kind, lessonKey, motionId, side, targetSeconds, maxSeconds, minSeconds, ready = true }: Props) {
+export function Recorder({ kind, lessonKey, motionId, side, targetSeconds, maxSeconds, minSeconds, ready = true, title = "" }: Props) {
   const t = useTranslations("coach.rec");
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
@@ -143,34 +146,33 @@ export function Recorder({ kind, lessonKey, motionId, side, targetSeconds, maxSe
     setPhase("idle");
   }
 
+  /** No connection: keep the speech on the phone and send it later (spec/12 §2, max 3 waiting). */
+  async function keepForLater() {
+    if (!clip) return;
+    const ok = await queueSpeech({ blob: clip.blob, kind, lessonKey, motionId, side, seconds: clip.seconds, title });
+    if (ok) {
+      URL.revokeObjectURL(clip.url);
+      setClip(null);
+      setPhase("queued");
+    } else {
+      setError(t("queueFull"));
+      setPhase("review");
+    }
+  }
+
   async function send() {
     if (!clip) return;
-    if (!navigator.onLine) {
-      setError(t("offline"));
+    setError(null);
+    if (!navigator.onLine) return keepForLater();
+    setPhase("sending");
+    const r = await uploadSpeech({ blob: clip.blob, kind, lessonKey, motionId, side, seconds: clip.seconds });
+    if (r.ok) {
+      router.push(`/app/coach/attempt/${r.id}`);
       return;
     }
-    setPhase("sending");
-    setError(null);
-    const fd = new FormData();
-    const ext = clip.blob.type.includes("mp4") ? "m4a" : clip.blob.type.includes("ogg") ? "ogg" : "webm";
-    fd.append("audio", clip.blob, `speech.${ext}`);
-    fd.append("kind", kind);
-    if (lessonKey) fd.append("lessonKey", lessonKey);
-    if (motionId) fd.append("motionId", motionId);
-    if (side) fd.append("side", side);
-    fd.append("duration", String(Math.round(clip.seconds)));
-    try {
-      const res = await fetch("/api/speech", { method: "POST", body: fd });
-      const j = (await res.json().catch(() => ({}))) as { id?: string; error?: string };
-      if (res.ok && j.id) {
-        router.push(`/app/coach/attempt/${j.id}`);
-        return;
-      }
-      const known = ["busy", "cap", "too_large", "rate_limited"];
-      setError(t(`error.${known.includes(j.error ?? "") ? j.error : "default"}` as never));
-    } catch {
-      setError(t("error.default"));
-    }
+    if (r.error === "offline") return keepForLater();
+    const known = ["busy", "cap", "too_large", "rate_limited"];
+    setError(t(`error.${known.includes(r.error) ? r.error : "default"}` as never));
     setPhase("review");
   }
 
@@ -280,6 +282,16 @@ export function Recorder({ kind, lessonKey, motionId, side, targetSeconds, maxSe
               {t("again")}
             </button>
           </div>
+        </div>
+      )}
+
+      {phase === "queued" && (
+        <div className="grid gap-3" role="status">
+          <p className="t-h3">{t("queuedTitle")}</p>
+          <p className="text-muted">{t("queuedLead")}</p>
+          <Link href="/app/coach" className="btn btn--lg justify-self-start">
+            {t("queuedBack")}
+          </Link>
         </div>
       )}
 

@@ -2,8 +2,15 @@ import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireActor } from "@/server/auth/current";
 import { hasRole, homeFor } from "@/server/permissions/can";
+import { CoachSupervision } from "@/components/hub/CoachSupervision";
+import { supervision } from "@/server/services/coach-supervision";
 
-/** Volunteer home. Cohorts and attendance arrive with M4. */
+/**
+ * Volunteer home. Cohorts and attendance arrive with M4; supervising the AI speech coach for her
+ * groups' students is here now (D-015).
+ */
+export const dynamic = "force-dynamic";
+
 export default async function VolunteerHome({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -13,6 +20,7 @@ export default async function VolunteerHome({ params }: { params: Promise<{ loca
     redirect(home === "/app/volunteer" ? "/sign-in/no-access" : home);
   }
   const t = await getTranslations("hub");
+  const groups = await supervision(actor);
   return (
     <>
       <h1 className="t-h2">{t("hello", { name: actor.firstName })}</h1>
@@ -20,6 +28,7 @@ export default async function VolunteerHome({ params }: { params: Promise<{ loca
         <p className="font-medium">{t("volunteerTitle")}</p>
         <p className="text-muted">{t("volunteerLead")}</p>
       </div>
+      <CoachSupervision groups={groups} />
     </>
   );
 }

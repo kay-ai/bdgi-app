@@ -35,7 +35,7 @@ export default async function Placement({ params }: { params: Promise<{ locale: 
         <p className="serif text-[22px] leading-snug">{PLACEMENT.motion}</p>
       </div>
       {e.ok ? (
-        <Recorder kind="placement" side={PLACEMENT.side} targetSeconds={PLACEMENT.targetSeconds} maxSeconds={e.maxSeconds} minSeconds={e.minSeconds} />
+        <Recorder kind="placement" side={PLACEMENT.side} targetSeconds={PLACEMENT.targetSeconds} maxSeconds={e.maxSeconds} minSeconds={e.minSeconds} title={t("placementTitle")} />
       ) : (
         <Blocked e={e} />
       )}

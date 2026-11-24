@@ -46,7 +46,7 @@ export type Resource = {
   stateId?: string | null;
   schoolId?: string | null;
   cohortIds?: string[];
-  /** For `speech.practice`: the cohort has the AI coach on and the AI consent is given. */
+  /** For `speech.practice`: AI practice consent is given (the coach is never switched per group, D-015). */
   aiReady?: boolean;
 };
 

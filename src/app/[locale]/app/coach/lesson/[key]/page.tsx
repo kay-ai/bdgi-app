@@ -87,7 +87,7 @@ export default async function LessonPage({ params }: { params: Promise<{ locale:
           <p className="serif text-[20px] leading-snug">{lesson.drill.motion}</p>
         </div>
         {e.ok ? (
-          <Recorder kind="lesson" lessonKey={lesson.key} side={lesson.drill.side} targetSeconds={lesson.drill.targetSeconds} maxSeconds={e.maxSeconds} minSeconds={Math.min(e.minSeconds, Math.round(lesson.drill.targetSeconds * 0.4))} />
+          <Recorder kind="lesson" lessonKey={lesson.key} side={lesson.drill.side} targetSeconds={lesson.drill.targetSeconds} maxSeconds={e.maxSeconds} minSeconds={Math.min(e.minSeconds, Math.round(lesson.drill.targetSeconds * 0.4))} title={lesson.title} />
         ) : (
           <Blocked e={e} />
         )}

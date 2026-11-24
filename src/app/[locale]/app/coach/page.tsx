@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { Bar, Blocked, requireStudent, Stars } from "@/components/coach/parts";
+import { QueuedSpeeches } from "@/components/coach/CoachClient";
+import { Bar, Blocked, requireStudent, Stars, Trend } from "@/components/coach/parts";
 import { LESSONS, SKILL, SKILLS } from "@/server/coach/curriculum";
 import { weakest } from "@/server/coach/tailor";
 import { coachHome } from "@/server/services/speech";
@@ -36,6 +37,8 @@ export default async function CoachHome({ params }: { params: Promise<{ locale: 
       </div>
 
       {!h.eligibility.ok && <Blocked e={h.eligibility} />}
+
+      <QueuedSpeeches />
 
       {h.placed && (
         <section className="grid gap-3" aria-labelledby="rank">
@@ -110,6 +113,14 @@ export default async function CoachHome({ params }: { params: Promise<{ locale: 
           ))}
         </section>
       )}
+
+      <Trend
+        points={h.recent
+          .filter((r) => r.status === "done")
+          .slice(0, 12)
+          .reverse()
+          .map((r) => ({ stars: r.stars, wpm: r.wpm, fillersPerMin: r.fillersPerMin, date: r.createdAt.toISOString() }))}
+      />
 
       <section className="grid gap-3" aria-labelledby="history">
         <h2 id="history" className="t-h3">

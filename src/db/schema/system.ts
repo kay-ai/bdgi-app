@@ -384,6 +384,32 @@ export const coachSkill = pgTable(
   (t) => [uniqueIndex("coach_skill_uq").on(t.personId, t.skillKey)],
 );
 
+/**
+ * A human coach's check on one AI scorecard (D-015): the AI coaches each student, and the
+ * volunteer supervising her group says whether its feedback looks right. Concerns go to staff on
+ * `/console/ai` until resolved. One review per coach per speech; a new one replaces it.
+ */
+export const coachReview = pgTable(
+  "coach_review",
+  {
+    id: id(),
+    attemptId: uuid("attempt_id")
+      .notNull()
+      .references(() => speechAttempt.id),
+    reviewerId: uuid("reviewer_id")
+      .notNull()
+      .references(() => person.id),
+    verdict: text("verdict", { enum: ["ok", "concern"] }).notNull(),
+    reason: text("reason", { enum: ["score_wrong", "feedback_wrong", "feedback_unhelpful", "tone", "other"] }),
+    note: text("note"), // enc
+    resolvedAt: tz("resolved_at"),
+    resolvedBy: uuid("resolved_by").references(() => person.id),
+    resolution: text("resolution"), // enc
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("coach_review_uq").on(t.attemptId, t.reviewerId), index("coach_review_open_idx").on(t.verdict, t.resolvedAt)],
+);
+
 /** A student's progress through each lesson of the coaching path. */
 export const coachLesson = pgTable(
   "coach_lesson",
