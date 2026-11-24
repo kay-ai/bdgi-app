@@ -1,9 +1,168 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { listQueued, removeQueued, uploadSpeech, type QueuedSpeech } from "./offline-queue";
 import { Recorder } from "./Recorder";
+
+function speakWithPhone(text: string, onEnd: () => void) {
+  const synth = window.speechSynthesis;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-GB";
+  u.rate = 0.95;
+  const voice = synth.getVoices().find((v) => v.lang === "en-GB") ?? synth.getVoices().find((v) => v.lang.startsWith("en"));
+  if (voice) u.voice = voice;
+  u.onend = onEnd;
+  u.onerror = onEnd;
+  synth.cancel();
+  synth.speak(u);
+}
+
+/**
+ * "Listen to feedback" (spec/12 §6): Amazon Polly's voice from /api/speech/[id]/audio, or the
+ * phone's own voice when no voice service is set up or the request fails.
+ */
+export function ListenFeedback({ id, text }: { id: string; text: string }) {
+  const t = useTranslations("coach.card");
+  const [state, setState] = useState<"idle" | "loading" | "playing">("idle");
+  const audio = useRef<HTMLAudioElement | null>(null);
+  const url = useRef<string | null>(null);
+
+  const stop = useCallback(() => {
+    audio.current?.pause();
+    if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
+    setState("idle");
+  }, []);
+  useEffect(
+    () => () => {
+      stop();
+      if (url.current) URL.revokeObjectURL(url.current);
+    },
+    [stop],
+  );
+
+  async function play() {
+    if (state !== "idle") return stop();
+    setState("loading");
+    try {
+      if (!url.current) {
+        const r = await fetch(`/api/speech/${id}/audio`);
+        if (!r.ok) throw new Error(String(r.status));
+        url.current = URL.createObjectURL(await r.blob());
+      }
+      const a = (audio.current ??= new Audio());
+      a.src = url.current;
+      a.onended = () => setState("idle");
+      await a.play();
+      setState("playing");
+    } catch {
+      if ("speechSynthesis" in window) {
+        speakWithPhone(text, () => setState("idle"));
+        setState("playing");
+      } else setState("idle");
+    }
+  }
+
+  return (
+    <button type="button" className="btn btn--plain justify-self-start" aria-pressed={state === "playing"} aria-busy={state === "loading"} onClick={play}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+        {state === "playing" ? <path d="M7 5h3v14H7zM14 5h3v14h-3z" /> : <path d="M4 9v6h4l5 4V5L8 9H4zM16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" />}
+      </svg>
+      {state === "playing" ? t("listenStop") : state === "loading" ? t("listenLoading") : t("listen")}
+    </button>
+  );
+}
+
+/**
+ * Speeches recorded offline (spec/12 §2 step 4). They are sent one at a time as soon as the phone
+ * is online; anything the server refuses for good is dropped with a note.
+ */
+export function QueuedSpeeches() {
+  const t = useTranslations("coach.queue");
+  const router = useRouter();
+  const [items, setItems] = useState<QueuedSpeech[]>([]);
+  const [sending, setSending] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const busy = useRef(false);
+
+  const refresh = useCallback(async () => setItems(await listQueued()), []);
+
+  const flush = useCallback(async () => {
+    if (busy.current || !navigator.onLine) return;
+    busy.current = true;
+    setSending(true);
+    let sent = 0;
+    try {
+      for (const q of await listQueued()) {
+        const r = await uploadSpeech(q);
+        if (r.ok) {
+          await removeQueued(q.id);
+          sent++;
+        } else if (!r.retry) {
+          await removeQueued(q.id);
+          setNote(t(r.error === "cap" ? "droppedCap" : "dropped"));
+        } else break; // offline again or the coach is busy: try on the next "online"
+      }
+    } finally {
+      busy.current = false;
+      setSending(false);
+      await refresh();
+      if (sent) {
+        setNote(t("sent", { n: sent }));
+        router.refresh();
+      }
+    }
+  }, [refresh, router, t]);
+
+  useEffect(() => {
+    void refresh().then(() => flush());
+    const on = () => void flush();
+    const changed = () => void refresh();
+    window.addEventListener("online", on);
+    window.addEventListener("bgdi-coach-queue", changed);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("bgdi-coach-queue", changed);
+    };
+  }, [refresh, flush]);
+
+  if (!items.length && !note) return null;
+  return (
+    <section className="card grid gap-3 !p-5" aria-live="polite">
+      {items.length > 0 && (
+        <>
+          <p className="font-medium">{t("title", { n: items.length })}</p>
+          <ul className="grid gap-1 text-[15px] text-muted">
+            {items.map((q) => (
+              <li key={q.id}>
+                {q.title || t("untitled")} · {Math.round(q.seconds)}s
+              </li>
+            ))}
+          </ul>
+          <p className="text-[15px] text-muted">{sending ? t("sending") : t("lead")}</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <button type="button" className="uline text-[15px] font-medium" onClick={() => void flush()} disabled={sending}>
+              {t("sendNow")}
+            </button>
+            <button
+              type="button"
+              className="uline text-[15px] text-muted"
+              onClick={async () => {
+                for (const q of items) await removeQueued(q.id);
+                await refresh();
+              }}
+              disabled={sending}
+            >
+              {t("discard")}
+            </button>
+          </div>
+        </>
+      )}
+      {note && <p className="text-[15px]">{note}</p>}
+    </section>
+  );
+}
 
 /** Reads text aloud with the phone's own voice (spec/12 §6 asks for Polly; the browser voice costs nothing). */
 export function SpeakButton({ text }: { text: string }) {
@@ -132,7 +291,7 @@ export function PracticePicker({ motions, initialMotion, initialSide, maxSeconds
         </div>
       </fieldset>
       {motion && <p className="serif text-[22px] leading-snug">{motion.text}</p>}
-      <Recorder kind="free" motionId={motionId || null} side={side} targetSeconds={120} maxSeconds={maxSeconds} minSeconds={minSeconds} ready={!!motionId} />
+      <Recorder kind="free" motionId={motionId || null} side={side} targetSeconds={120} maxSeconds={maxSeconds} minSeconds={minSeconds} ready={!!motionId} title={motion?.text ?? ""} />
     </div>
   );
 }

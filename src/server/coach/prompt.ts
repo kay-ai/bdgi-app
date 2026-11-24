@@ -3,7 +3,7 @@ import { SKILL, SKILLS, type Lesson, type SkillKey } from "./curriculum";
 import type { Metrics } from "./metrics";
 
 /** Versioned with every attempt (`speech_attempt.prompt_version`). Change the version when the wording changes. */
-export const PROMPT_VERSION = "coach-v1";
+export const PROMPT_VERSION = "coach-v2";
 
 const CONTENT = SKILLS.filter((s) => s.area === "content");
 
@@ -13,6 +13,7 @@ You will receive JSON with: the student's first name, the motion, the side they 
 
 Judge only what is in the transcript. Score each content skill from 1 to 5 using these anchors:
 ${CONTENT.map((s) => `- ${s.key}: ${s.rubric}`).join("\n")}
+If "rubricAnchors" is given, it is BGDI staff's guidance on scoring: apply it on top of these anchors.
 Score rebuttal as null if the speech does not try to answer the other side and the focus skill is not rebuttal.
 Also give "structure" (opening, clear points, closing) and "argument" (reasons, examples, relevance to the motion and side) from 1 to 5: 1 = not yet present, 3 = clearly present, 5 = excellent for a school debater.
 
@@ -81,6 +82,8 @@ export type CoachInput = {
   weakestSkills: SkillKey[];
   transcript: string;
   metrics: Metrics;
+  /** Staff's rubric guidance from /console/ai (spec/12 §5), read into every prompt. */
+  anchors?: string;
 };
 
 /** The user message: structured JSON, so the transcript is always data inside a field. */
@@ -100,6 +103,7 @@ export function userMessage(i: CoachInput) {
       longPauses: i.metrics.longPauses,
       longestPauseSeconds: i.metrics.longestPauseS,
     },
+    ...(i.anchors?.trim() ? { rubricAnchors: i.anchors.trim().slice(0, 2000) } : {}),
     transcript: i.transcript,
   });
 }

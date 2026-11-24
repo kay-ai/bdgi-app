@@ -8,6 +8,7 @@ import { COACH_JSON_SCHEMA, coachOutput, fallbackFeedback, PROMPT_VERSION, SYSTE
 import { deliveryScores, nextLesson, passedLesson, rankFor, updateRatings, weakest, type Ratings } from "@/server/coach/tailor";
 import type { Actor } from "@/server/permissions/can";
 import { scorer, transcriber } from "@/server/providers/speech";
+import { speaker } from "@/server/providers/tts";
 import { reach } from "./reach";
 import { storage } from "@/server/providers/storage";
 import { audit, type Ctx } from "./audit";
@@ -19,16 +20,36 @@ import { dispatch, queueTemplate } from "./messaging";
  * updates the student's skill ratings and lesson progress, then deletes the recording.
  */
 
-type Settings = { enabled: boolean; cap: number; maxSeconds: number; minSeconds: number };
-async function settings(): Promise<Settings> {
-  const rows = await db.select().from(s.setting).where(inArray(s.setting.key, ["ai_enabled", "ai_monthly_attempt_cap", "ai_max_seconds", "ai_min_seconds"]));
+export type CoachSettings = { enabled: boolean; cap: number; maxSeconds: number; minSeconds: number; anchors: string };
+export const AI_SETTING_KEYS = ["ai_enabled", "ai_monthly_attempt_cap", "ai_max_seconds", "ai_min_seconds", "ai_rubric_anchors"] as const;
+
+/** The coach's settings (spec/12 §5), with safe defaults for any row that isn't there yet. */
+export async function coachSettings(): Promise<CoachSettings> {
+  const rows = await db.select().from(s.setting).where(inArray(s.setting.key, [...AI_SETTING_KEYS]));
   const v = Object.fromEntries(rows.map((r) => [r.key, r.value]));
   return {
     enabled: v.ai_enabled !== false,
     cap: Number(v.ai_monthly_attempt_cap ?? 20),
     maxSeconds: Number(v.ai_max_seconds ?? 150),
     minSeconds: Number(v.ai_min_seconds ?? 20),
+    anchors: typeof v.ai_rubric_anchors === "string" ? v.ai_rubric_anchors : "",
   };
+}
+const settings = coachSettings;
+
+/**
+ * The group a speech is filed under, so the student's human coach can supervise it (D-015). It
+ * never decides whether she may practise: the coach works with each student on her own.
+ */
+export async function currentCohortOf(personId: string): Promise<string | null> {
+  const [r] = await db
+    .select({ id: s.cohort.id })
+    .from(s.cohortMember)
+    .innerJoin(s.cohort, eq(s.cohort.id, s.cohortMember.cohortId))
+    .where(and(eq(s.cohortMember.personId, personId), eq(s.cohortMember.role, "student"), isNull(s.cohortMember.leftOn), isNull(s.cohort.deletedAt), isNull(s.cohort.closedAt)))
+    .orderBy(desc(s.cohortMember.joinedOn))
+    .limit(1);
+  return r?.id ?? null;
 }
 
 const monthStart = (now = new Date()) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -49,7 +70,8 @@ export type Eligibility =
 /**
  * Who may practise (spec/12 §1): the kill switch is on; the person is a student whose sign-up is
  * complete (pending review or active, CONFIRM in D-015); `ai_practice` consent is given and not
- * withdrawn, or they were 18+ at sign-up; and this month's attempts are under the cap.
+ * withdrawn, or they were 18+ at sign-up; and this month's attempts are under the cap. Her group
+ * plays no part: each student is coached on her own (D-015).
  */
 export async function eligibility(personId: string, now = new Date()): Promise<Eligibility> {
   const st = await settings();
@@ -172,7 +194,11 @@ export type CreateResult = { ok: true; id: string } | { ok: false; code: "forbid
 export async function createAttempt(ctx: Ctx, input: NewAttempt): Promise<CreateResult> {
   const actor = ctx.actor;
   if (!actor || !actor.roles.some((r) => r.role === "student")) return { ok: false, code: "forbidden" };
-  const personId = actor.personId;
+  return createAttemptFor(ctx, actor.personId, input, "web");
+}
+
+/** Shared by the web upload and the WhatsApp bot (spec/12 §7 step 3: "run the same pipeline"). */
+export async function createAttemptFor(ctx: Ctx, personId: string, input: NewAttempt, channel: "web" | "whatsapp"): Promise<CreateResult> {
   const baseType = input.contentType.split(";")[0]!.trim().toLowerCase();
   if (!AUDIO_TYPES.includes(baseType)) return { ok: false, code: "invalid" };
   if (input.audio.byteLength > MAX_AUDIO_BYTES) return { ok: false, code: "too_large" };
@@ -196,6 +222,7 @@ export async function createAttempt(ctx: Ctx, input: NewAttempt): Promise<Create
 
   const elig = await eligibility(personId);
   if (!elig.ok) return { ok: false, code: elig.reason };
+  const cohortId = await currentCohortOf(personId);
   // One speech at a time: a second upload while one is still being scored is refused.
   const [busy] = await db
     .select({ id: s.speechAttempt.id })
@@ -206,13 +233,13 @@ export async function createAttempt(ctx: Ctx, input: NewAttempt): Promise<Create
 
   const [a] = await db
     .insert(s.speechAttempt)
-    .values({ personId, side, channel: "web", kind: input.kind, lessonKey, motionId, durationSeconds: String(Math.round(input.durationHint)), status: "uploaded" })
+    .values({ personId, cohortId, side, channel, kind: input.kind, lessonKey, motionId, durationSeconds: String(Math.round(input.durationHint)), status: "uploaded" })
     .returning({ id: s.speechAttempt.id });
   const ext = baseType.includes("mp4") || baseType.includes("m4a") || baseType.includes("aac") ? "m4a" : baseType.includes("ogg") ? "ogg" : baseType.includes("mpeg") ? "mp3" : "webm";
   const key = `speech/${a!.id}.${ext}`;
   await storage().put(key, input.audio, baseType);
   await db.update(s.speechAttempt).set({ audioKey: key, metrics: { contentType: baseType } }).where(eq(s.speechAttempt.id, a!.id));
-  await audit(db, ctx, { action: "speech.create", entityType: "speech_attempt", entityId: a!.id, subjectPersonId: personId, meta: { kind: input.kind, lessonKey } });
+  await audit(db, ctx, { action: "speech.create", entityType: "speech_attempt", entityId: a!.id, subjectPersonId: personId, meta: { kind: input.kind, lessonKey, channel } });
   return { ok: true, id: a!.id };
 }
 
@@ -297,6 +324,7 @@ export async function processAttempt(id: string, now = new Date()) {
       weakestSkills: weakest(ratingsBefore),
       transcript: tr.text,
       metrics: m,
+      anchors: st.anchors,
     });
 
     const bars = deliveryBars(m, target);
@@ -365,7 +393,12 @@ export async function processAttempt(id: string, now = new Date()) {
     });
 
     if (fb?.safeguarding_flag) await openSafeguardingCase(a.id, a.personId, p?.stateId ?? null);
-    const to = p ? reach({ ...p, preferredChannel: p.preferredChannel === "sms" ? "whatsapp" : p.preferredChannel }) : null;
+    // A voice note sent on WhatsApp is answered there (spec/12 §7 step 4); web speeches follow her preference.
+    const to = p
+      ? a.channel === "whatsapp" && p.phone
+        ? { to: p.phone, channel: "whatsapp" as const }
+        : reach({ ...p, preferredChannel: p.preferredChannel === "sms" ? "whatsapp" : p.preferredChannel })
+      : null;
     if (p && to) {
       const mid = await queueTemplate({
         templateKey: "speech.result",
@@ -416,7 +449,20 @@ export async function sweepSpeech(now = new Date()) {
     .update(s.speechAttempt)
     .set({ status: "failed", rejectReason: "server", updatedAt: now })
     .where(and(inArray(s.speechAttempt.status, ["transcribing", "scoring"]), lt(s.speechAttempt.updatedAt, new Date(now.getTime() - 10 * 60_000))));
-  return { processed: done };
+  const purged = await purgeOldTranscripts(now);
+  return { processed: done, purged };
+}
+
+/** spec/12 §8: transcripts (and the word timings that could rebuild them) are kept 12 months. */
+export async function purgeOldTranscripts(now = new Date()) {
+  const cutoff = new Date(now);
+  cutoff.setUTCMonth(cutoff.getUTCMonth() - 12);
+  const rows = await db
+    .update(s.speechAttempt)
+    .set({ transcript: null, words: null, updatedAt: now })
+    .where(and(lt(s.speechAttempt.createdAt, cutoff), sql`(${s.speechAttempt.transcript} is not null or ${s.speechAttempt.words} is not null)`))
+    .returning({ id: s.speechAttempt.id });
+  return rows.length;
 }
 
 async function openSafeguardingCase(attemptId: string, personId: string, stateId: string | null) {
@@ -514,6 +560,32 @@ export async function getAttempt(actor: Actor, id: string): Promise<AttemptView 
     transcript: a.a.transcript ? decrypt(a.a.transcript) : null,
     createdAt: a.a.createdAt,
   };
+}
+
+/* ---------- Read-aloud (spec/12 §6) ---------- */
+
+/** What "Listen to feedback" says: the encouragement, then the strengths and next steps. */
+export function feedbackScript(f: Pick<Feedback, "encouragement" | "strengths" | "nextSteps">) {
+  return [f.encouragement, "What you did well.", ...f.strengths, "Try this next time.", ...f.nextSteps].join(" ").slice(0, 2900);
+}
+
+export async function feedbackAudio(actor: Actor, id: string): Promise<{ ok: true; audio: Uint8Array } | { ok: false; code: "not_found" | "no_tts" | "failed" }> {
+  const a = await getAttempt(actor, id);
+  if (!a || a.status !== "done" || !a.feedback) return { ok: false, code: "not_found" };
+  const voice = speaker();
+  if (!voice) return { ok: false, code: "no_tts" };
+  const key = `speech-tts/${a.id}.mp3`;
+  const store = storage();
+  const cached = await store.get(key).catch(() => null);
+  if (cached?.byteLength) return { ok: true, audio: cached };
+  try {
+    const audio = await voice.synthesize(feedbackScript(a.feedback));
+    await store.put(key, audio, "audio/mpeg").catch(() => console.warn("[speech] could not cache read-aloud audio"));
+    return { ok: true, audio };
+  } catch (e) {
+    console.warn("[speech] read-aloud failed:", e instanceof Error ? e.message : "unknown");
+    return { ok: false, code: "failed" };
+  }
 }
 
 export { SKILLS };

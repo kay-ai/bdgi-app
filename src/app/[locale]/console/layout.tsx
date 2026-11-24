@@ -34,6 +34,7 @@ export default async function ConsoleLayout({ children, params }: { children: Re
     { href: "/console/schools", label: t("schools"), icon: "schools", count: counts.schools, countLabel: waiting(counts.schools), show: can(actor, "school.view") && isStaff(actor) },
     { href: "/console/donations", label: t("donations"), icon: "donations", show: can(actor, "donation.view") },
     { href: "/console/messages", label: t("messages"), icon: "messages", show: can(actor, "user.manage") },
+    { href: "/console/ai", label: t("aiCoach"), icon: "ai", show: can(actor, "ai.settings") },
     { href: "/console/admin/users", label: t("users"), icon: "users", show: can(actor, "user.manage") },
   ];
 

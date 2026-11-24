@@ -283,6 +283,8 @@ export const settings: Record<string, unknown> = {
   ai_monthly_attempt_cap: 8,
   ai_max_seconds: 150,
   ai_min_seconds: 20,
+  // Staff's scoring guidance, added to every scoring request (spec/12 §5).
+  ai_rubric_anchors: "",
   aws_monthly_budget_usd: 150,
   max_mentees: 2,
   hub_launch_date: "",

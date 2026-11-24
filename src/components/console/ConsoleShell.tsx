@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { GraduationCap, HandCoins, HandHeart, LayoutDashboard, Menu, MessageSquareText, School, UsersRound, X } from "lucide-react";
+import { GraduationCap, HandCoins, HandHeart, LayoutDashboard, Menu, MessageSquareText, Mic, School, UsersRound, X } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 
 const ICONS = {
@@ -11,6 +11,7 @@ const ICONS = {
   schools: School,
   donations: HandCoins,
   messages: MessageSquareText,
+  ai: Mic,
   users: UsersRound,
 } as const;
 
