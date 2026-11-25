@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
+import { Check, Heart, LifeBuoy, Sparkles } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { Chips, CircleScale, Q } from "@/components/join/fields";
@@ -18,9 +19,32 @@ export type ProfileInitial = {
 
 /**
  * The questions sign-up no longer asks (D-019): dreams, where she'd like help, her picture and
- * the five check-in statements that give her baseline.
+ * the five check-in statements that give her baseline. Laid out like the rest of her Hub (D-024):
+ * her picture up top with how many parts are done, each part a card, and a save bar that stays
+ * in reach.
  */
-export function StudentProfileForm({ initial, locale }: { initial: ProfileInitial; locale: string }) {
+const GOLD = "#FFB800";
+
+function Part({ id, icon, title, done, lead, children }: { id: string; icon: React.ReactNode; title: string; done: boolean; lead?: string; children: React.ReactNode }) {
+  return (
+    <section id={id} aria-labelledby={`${id}-h`} className="grid scroll-mt-24 gap-7 rounded-[24px] border border-line bg-[#fffdf8] p-5 sm:p-7">
+      <div className="flex items-center gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full" style={{ background: done ? GOLD : "#f1eadc" }} aria-hidden="true">
+          {done ? <Check size={20} strokeWidth={2.5} /> : icon}
+        </span>
+        <div className="grid">
+          <h2 id={`${id}-h`} className="t-h3">
+            {title}
+          </h2>
+          {lead && <p className="text-[14px] text-muted">{lead}</p>}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export function StudentProfileForm({ initial, locale, firstName }: { initial: ProfileInitial; locale: string; firstName: string }) {
   const t = useTranslations("join");
   const th = useTranslations("hub.profile");
   const tc = useTranslations("common");
@@ -32,6 +56,18 @@ export function StudentProfileForm({ initial, locale }: { initial: ProfileInitia
   const err = (k: string) => (errors[k] ? t(`errors.${errors[k]}` as never) : undefined);
   const setDreams = (p: Partial<ProfileInitial["dreams"]>) => setData((d) => ({ ...d, dreams: { ...d.dreams, ...p } }));
   const setHelp = (p: Partial<ProfileInitial["help"]>) => setData((d) => ({ ...d, help: { ...d.help, ...p } }));
+
+  const done = {
+    dreams: !!data.dreams.dreamCareer.trim() && data.dreams.interests.length > 0,
+    help: data.help.needs.length > 0 && !!data.help.deviceAccess,
+    checkin: (["q1", "q2", "q3", "q4", "q5"] as const).every((q) => data.checkin[q] !== undefined),
+  };
+  const parts = [
+    { id: "dreams", label: t("student.steps.dreams"), done: done.dreams },
+    { id: "help", label: t("student.steps.help"), done: done.help },
+    { id: "checkin", label: t("student.steps.checkin"), done: done.checkin },
+  ];
+  const doneCount = parts.filter((p) => p.done).length;
 
   function save() {
     setStatus("idle");
@@ -52,11 +88,59 @@ export function StudentProfileForm({ initial, locale }: { initial: ProfileInitia
   }
 
   return (
-    <div className="grid gap-12">
-      <section aria-labelledby="dreams-h" className="grid gap-8">
-        <h2 id="dreams-h" className="t-h3">
-          {t("student.steps.dreams")}
-        </h2>
+    <div className="grid gap-6 pb-24">
+      <section className="grid gap-6 rounded-[28px] p-6 sm:p-8" style={{ background: "#1a1712", color: "#fbf7ef" }} aria-labelledby="avatar-h">
+        <div className="flex items-center gap-4">
+          <span className="rounded-full p-1" style={{ background: GOLD }}>
+            <Avatar avatarKey={data.avatarKey} size={80} />
+          </span>
+          <div className="grid gap-1">
+            <h1 className="t-h2" style={{ color: "inherit" }}>
+              {firstName}
+            </h1>
+            <p className="text-[15px]" style={{ color: "#b9b3a8" }}>
+              {th("partsDone", { n: doneCount, of: parts.length })}
+            </p>
+          </div>
+        </div>
+        <ul className="flex flex-wrap gap-2" role="list">
+          {parts.map((p) => (
+            <li key={p.id}>
+              <a
+                href={`#${p.id}`}
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[14px] font-medium"
+                style={p.done ? { background: GOLD, color: "#1a1712" } : { background: "#2e2922", color: "#fbf7ef" }}
+              >
+                {p.done && <Check size={14} strokeWidth={3} aria-hidden="true" />}
+                {p.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <div className="grid gap-3">
+          <h2 id="avatar-h" className="text-[13px] font-medium uppercase tracking-wide" style={{ color: GOLD }}>
+            {t("student.avatar")}
+          </h2>
+          <div className="grid grid-cols-6 gap-2 sm:grid-cols-12" role="radiogroup" aria-labelledby="avatar-h">
+            {AVATARS.map((a) => (
+              <button
+                key={a}
+                type="button"
+                role="radio"
+                aria-checked={data.avatarKey === a}
+                aria-label={a}
+                onClick={() => setData((d) => ({ ...d, avatarKey: a }))}
+                className="grid aspect-square place-items-center rounded-full p-[3px] transition-transform active:scale-95"
+                style={data.avatarKey === a ? { boxShadow: `0 0 0 3px ${GOLD}` } : undefined}
+              >
+                <Avatar avatarKey={a} size={48} className="h-full w-full" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <Part id="dreams" icon={<Sparkles size={20} />} title={t("student.steps.dreams")} done={done.dreams}>
         <label className="field">
           <span className="text-[16px] font-medium">{t("student.dream")}</span>
           <input
@@ -70,7 +154,7 @@ export function StudentProfileForm({ initial, locale }: { initial: ProfileInitia
             {t("student.dreamSuggestions")
               .split("|")
               .map((s) => (
-                <button key={s} type="button" className="rounded-[8px] bg-surface px-3 py-2 text-[14px]" onClick={() => setDreams({ dreamCareer: s })}>
+                <button key={s} type="button" className={`rounded-full px-3 py-1.5 text-[14px] ${data.dreams.dreamCareer === s ? "bg-[#1a1712] text-[#fbf7ef]" : "bg-surface"}`} onClick={() => setDreams({ dreamCareer: s })}>
                   {s}
                 </button>
               ))}
@@ -96,12 +180,9 @@ export function StudentProfileForm({ initial, locale }: { initial: ProfileInitia
           </span>
           <textarea className="input" maxLength={200} value={data.dreams.communityDream} onChange={(e) => setDreams({ communityDream: e.target.value })} />
         </label>
-      </section>
+      </Part>
 
-      <section aria-labelledby="help-h" className="grid gap-8">
-        <h2 id="help-h" className="t-h3">
-          {t("student.steps.help")}
-        </h2>
+      <Part id="help" icon={<LifeBuoy size={20} />} title={t("student.steps.help")} done={done.help}>
         <Q label={t("student.needs")} error={err("help.needs")} as="fieldset">
           <Chips
             multiple
@@ -131,18 +212,15 @@ export function StudentProfileForm({ initial, locale }: { initial: ProfileInitia
             options={DEVICES.map((d) => ({ value: d, label: t(`student.devices.${d}`) }))}
           />
         </Q>
-      </section>
+      </Part>
 
-      <section aria-labelledby="checkin-h" className="grid gap-8">
-        <div className="grid gap-2">
-          <h2 id="checkin-h" className="t-h3">
-            {t("student.steps.checkin")}
-          </h2>
-          <p className="text-muted">{t("student.checkinLead")}</p>
-        </div>
-        {(["q1", "q2", "q3", "q4", "q5"] as const).map((q) => (
-          <div key={q} className="grid gap-4">
-            <p className="serif text-[20px] leading-snug">{t(`student.${q}`)}</p>
+      <Part id="checkin" icon={<Heart size={20} />} title={t("student.steps.checkin")} done={done.checkin} lead={t("student.checkinLead")}>
+        {(["q1", "q2", "q3", "q4", "q5"] as const).map((q, i) => (
+          <div key={q} className={`grid gap-4 ${i > 0 ? "border-t border-line pt-5" : ""}`}>
+            <p className="serif flex gap-3 text-[20px] leading-snug">
+              <span className="tabular text-muted">{i + 1}.</span>
+              {t(`student.${q}`)}
+            </p>
             <CircleScale
               label={t(`student.${q}`)}
               low={t("student.scaleLow")}
@@ -157,39 +235,15 @@ export function StudentProfileForm({ initial, locale }: { initial: ProfileInitia
             )}
           </div>
         ))}
-      </section>
+      </Part>
 
-      <section aria-labelledby="avatar-h" className="grid gap-6">
-        <h2 id="avatar-h" className="t-h3">
-          {t("student.avatar")}
-        </h2>
-        <div className="grid grid-cols-6 gap-2 sm:grid-cols-8" role="radiogroup" aria-labelledby="avatar-h">
-          {AVATARS.map((a) => (
-            <button
-              key={a}
-              type="button"
-              role="radio"
-              aria-checked={data.avatarKey === a}
-              aria-label={a}
-              onClick={() => setData((d) => ({ ...d, avatarKey: a }))}
-              className={`grid aspect-square place-items-center rounded-full p-[3px] ${data.avatarKey === a ? "ring-2 ring-ink" : ""}`}
-            >
-              <Avatar avatarKey={a} size={48} className="h-full w-full" />
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <div className="flex flex-wrap items-center gap-5">
-        <button type="button" className="btn btn--lg min-w-[200px]" onClick={save} disabled={pending} aria-busy={pending}>
+      <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-4 rounded-full p-2 pl-5 shadow-lg" style={{ background: "#1a1712", color: "#fbf7ef" }}>
+        <span className="flex-1 text-[14px]" role={status === "idle" ? undefined : status === "saved" ? "status" : "alert"}>
+          {status === "saved" ? th("saved") : status === "error" ? th("error") : th("partsDone", { n: doneCount, of: parts.length })}
+        </span>
+        <button type="button" className="btn btn--gold" onClick={save} disabled={pending} aria-busy={pending}>
           {pending ? th("saving") : th("save")}
         </button>
-        {status === "saved" && <p role="status">{th("saved")}</p>}
-        {status === "error" && (
-          <p className="error" role="alert">
-            {th("error")}
-          </p>
-        )}
       </div>
     </div>
   );

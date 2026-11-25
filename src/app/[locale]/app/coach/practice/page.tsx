@@ -27,8 +27,10 @@ export default async function Practice({ params, searchParams }: { params: Promi
       <Link href="/app/coach" className="uline justify-self-start text-[15px]">
         {t("back")}
       </Link>
-      <h1 className="t-h2">{t("freeTitle")}</h1>
-      <p className="text-muted">{t("freeLead")}</p>
+      <div className="grid gap-1">
+        <h1 className="t-h2">{t("freeTitle")}</h1>
+        <p className="text-muted">{t("home.freeShort")}</p>
+      </div>
       {e.ok ? (
         <PracticePicker motions={motions.map((m) => ({ id: m.id, text: m.text }))} initialMotion={sp.motion} initialSide={side} maxSeconds={e.maxSeconds} minSeconds={e.minSeconds} />
       ) : (

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Shuffle } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { listQueued, removeQueued, uploadSpeech, type QueuedSpeech } from "./offline-queue";
 import { Recorder } from "./Recorder";
@@ -177,7 +178,7 @@ export function SpeakButton({ text }: { text: string }) {
   return (
     <button
       type="button"
-      className="uline text-[15px] font-medium"
+      className="uline justify-self-start text-[15px] font-medium"
       aria-pressed={on}
       onClick={() => {
         const synth = window.speechSynthesis;
@@ -269,13 +270,18 @@ export function PracticePicker({ motions, initialMotion, initialSide, maxSeconds
             </option>
           ))}
         </select>
-        <button type="button" className="uline justify-self-start text-[15px] font-medium" onClick={() => setMotionId(motions[Math.floor(Math.random() * motions.length)]?.id ?? "")}>
+        <button
+          type="button"
+          className="inline-flex min-h-11 items-center gap-2 justify-self-start rounded-full bg-[#FFB800] px-5 text-[15px] font-semibold text-[#1a1712]"
+          onClick={() => setMotionId(motions[Math.floor(Math.random() * motions.length)]?.id ?? "")}
+        >
+          <Shuffle size={18} aria-hidden="true" />
           {t("surprise")}
         </button>
       </div>
       <fieldset className="field">
         <legend>{t("side")}</legend>
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t("side")}>
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={t("side")}>
           {(["for", "against", "open"] as const).map((v) => (
             <button
               key={v}
@@ -283,14 +289,19 @@ export function PracticePicker({ motions, initialMotion, initialSide, maxSeconds
               role="radio"
               aria-checked={side === v}
               onClick={() => setSide(v)}
-              className={`min-h-12 rounded-[12px] border px-5 text-[16px] ${side === v ? "border-ink bg-ink text-bg" : "border-line bg-bg"}`}
+              className={`min-h-14 rounded-full border-2 px-3 text-[16px] font-medium leading-tight ${side === v ? "border-[#1a1712] bg-[#1a1712] text-[#fbf7ef]" : "border-line bg-bg"}`}
             >
               {t(v)}
             </button>
           ))}
         </div>
       </fieldset>
-      {motion && <p className="serif text-[22px] leading-snug">{motion.text}</p>}
+      {motion && (
+        <div className="grid gap-2 rounded-[24px] p-6" style={{ background: "#1a1712", color: "#fbf7ef" }}>
+          <span className="text-[13px] font-medium uppercase tracking-wide text-[#FFB800]">{t(side)}</span>
+          <p className="serif text-[24px] leading-snug">{motion.text}</p>
+        </div>
+      )}
       <Recorder kind="free" motionId={motionId || null} side={side} targetSeconds={120} maxSeconds={maxSeconds} minSeconds={minSeconds} ready={!!motionId} title={motion?.text ?? ""} />
     </div>
   );

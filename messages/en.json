@@ -1497,9 +1497,6 @@
     "volunteerLead": "Your cohorts, attendance and session plans will appear here soon.",
     "schoolTitle": "Your school's Hub is getting ready",
     "schoolLead": "Your school's cohorts and students will appear here soon.",
-    "coachTitle": "Your speech coach",
-    "coachLead": "Speak on a topic, get feedback, and follow lessons made for you.",
-    "coachOpen": "Open my coach",
     "childrenTitle": "Your children",
     "childStatus": {
       "pending_consent": "Waiting for your permission",
@@ -1519,9 +1516,6 @@
     "aiFailed": "That didn't save. Please try again.",
     "saving": "Saving…",
     "profileLink": "My profile",
-    "finishTitle": "Finish your profile",
-    "finishLead": "Tell us your dreams, what you’d like help with, and pick your picture. It takes about three minutes.",
-    "finishOpen": "Finish now",
     "profile": {
       "title": "My profile",
       "lead": "A few questions we didn’t ask when you signed up. Your answers help your coach plan your sessions.",
@@ -1532,7 +1526,9 @@
       "save": "Save my profile",
       "saving": "Saving…",
       "saved": "Saved. Thank you!",
-      "error": "We couldn’t save that. Check your connection and try again."
+      "error": "We couldn’t save that. Check your connection and try again.",
+      "back": "Back to my Hub",
+      "partsDone": "{n} of {of} parts done"
     },
     "supervise": {
       "title": "Your students' speech coaching",
@@ -1640,15 +1636,10 @@
     },
     "group": {
       "title": "My group",
-      "since": "Running since {date}",
       "startsOn": "Starts {date}",
-      "meets": "Meets {when}",
-      "coaches": "{n, plural, one {Coach} other {Coaches}}: {names}",
       "noCoach": "Your coach will be added soon.",
       "waitingTitle": "You're on the list!",
-      "waitingLead": "We'll message you when your group is ready. Until then, practise with your speech coach.",
       "findingTitle": "We're finding your group",
-      "findingLead": "We'll tell you which group you're in and who your coach is. Until then, practise with your speech coach.",
       "day": {
         "sun": "Sundays",
         "mon": "Mondays",
@@ -1657,25 +1648,9 @@
         "thu": "Thursdays",
         "fri": "Fridays",
         "sat": "Saturdays"
-      }
-    },
-    "progress": {
-      "title": "My progress",
-      "notStarted": "Give your first two-minute speech and your coach will show your rank, your lessons and your progress here.",
-      "firstSpeech": "Give my first speech",
-      "youAre": "You're a {rank}",
-      "lessons": "Lessons passed",
-      "lessonsValue": "{n} of {of}",
-      "speeches": "Speeches",
-      "thisMonth": "{n} this month",
-      "streak": "Weeks in a row",
-      "weeks": "{n, plural, one {# week} other {# weeks}}",
-      "best": "Best: {n}",
-      "stars": "Stars lately",
-      "up": "Up {n} from before",
-      "down": "Down {n} from before",
-      "steady": "Same as before",
-      "nextLesson": "Your next lesson"
+      },
+      "soon": "We'll message you soon.",
+      "coachesLabel": "Coaches"
     },
     "badges": {
       "title": "My badges",
@@ -1721,6 +1696,25 @@
         "name": "Every lesson",
         "how": "Pass all 18 lessons"
       }
+    },
+    "home": {
+      "hello": "Hi, {name}!",
+      "rankLabel": "Your rank",
+      "practise": "Practise now",
+      "start": "Give my first speech",
+      "startTitle": "Find your rank",
+      "startLead": "Talk for two minutes. Your coach does the rest.",
+      "nextLesson": "Up next: {title}",
+      "allLessons": "Every lesson passed. Keep it up!",
+      "streak": "{n, plural, one {week in a row} other {weeks in a row}}",
+      "speeches": "{n, plural, one {speech} other {speeches}}",
+      "thisMonth": "{n} this month",
+      "lessons": "lessons",
+      "stars": "stars lately",
+      "nextBadge": "Next badge",
+      "toGo": "{n} to go",
+      "finish": "Finish your profile",
+      "finishShort": "3 minutes · pick your picture"
     }
   },
   "staffAuth": {
@@ -1780,19 +1774,12 @@
       "debater": "Debater",
       "expert": "Expert debater"
     },
-    "youAre": "You are a {rank}",
-    "rankLead": "Average skill {mean} of 5. Expert debaters reach 4.2 with every skill at 3.5 or more.",
     "placementTitle": "Let's hear you speak",
-    "placementLead": "Give a two-minute speech. Your coach listens, finds what you already do well, and builds your lessons from there.",
     "placementStart": "Start my first speech",
     "nextTitle": "Your next lesson",
-    "nextWhy": "Picked because {skill} is where you can grow most right now.",
     "startLesson": "Start lesson",
     "allDone": "You've passed every lesson. Keep sharp with free practice.",
     "freeTitle": "Free practice",
-    "freeLead": "Pick any motion and side, and get a full scorecard.",
-    "freeStart": "Practise a motion",
-    "skillsTitle": "Your skills",
     "content": "What you say",
     "delivery": "How you say it",
     "notRated": "Not rated yet",
@@ -1800,7 +1787,6 @@
     "lessonsPassed": "{n} of 2 lessons passed",
     "historyTitle": "Your speeches",
     "historyEmpty": "No speeches yet. Your first one takes two minutes.",
-    "left": "{left} of {cap} speeches left this month",
     "status": {
       "uploaded": "Waiting",
       "transcribing": "Listening",
@@ -1829,7 +1815,6 @@
       "listen": "Listen",
       "stop": "Stop",
       "drillTitle": "Your turn",
-      "passed": "You've passed this lesson. Practise again any time.",
       "aim": "Aim for {time}"
     },
     "practice": {
@@ -1911,7 +1896,10 @@
       "fallback": "Your coach was busy, so this feedback is based on your delivery only.",
       "listen": "Listen to feedback",
       "listenStop": "Stop",
-      "listenLoading": "Getting ready…"
+      "listenLoading": "Getting ready…",
+      "wpm": "words a minute",
+      "fillers": "filler words",
+      "time": "speaking time"
     },
     "rejected": {
       "title": "We couldn't score that one",
@@ -1934,13 +1922,23 @@
     },
     "trend": {
       "title": "How you're growing",
-      "lead": "Your last {n} scored speeches, oldest on the left.",
       "stars": "Stars",
       "pace": "Pace",
       "fillers": "Filler words",
       "wpm": "{n} words a minute",
       "perMin": "{n} a minute",
       "note": "The shaded band is the target: 110 to 160 words a minute, and 2 or fewer filler words a minute."
+    },
+    "home": {
+      "left": "{left} of {cap} left this month",
+      "placementShort": "Talk for two minutes. Your coach finds your rank and builds your lessons.",
+      "freeShort": "Any motion, any side",
+      "lessons": "Lessons",
+      "lessonsCount": "{n} of {of} passed",
+      "pathTitle": "Your skills and lessons",
+      "done": "Passed",
+      "upNext": "Up next",
+      "notYet": "Not yet"
     }
   }
 }

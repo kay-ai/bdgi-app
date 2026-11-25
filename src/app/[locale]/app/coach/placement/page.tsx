@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Recorder } from "@/components/coach/Recorder";
-import { Blocked, requireStudent } from "@/components/coach/parts";
+import { Blocked, Chip, Hero, requireStudent } from "@/components/coach/parts";
 import { PLACEMENT } from "@/server/coach/curriculum";
 import { eligibility } from "@/server/services/speech";
 
@@ -26,14 +26,21 @@ export default async function Placement({ params }: { params: Promise<{ locale: 
       <Link href="/app/coach" className="uline justify-self-start text-[15px]">
         {t("back")}
       </Link>
-      <h1 className="t-h2">{t("placementTitle")}</h1>
-      <p className="text-muted">{t("placementLead")}</p>
-      <div className="grid gap-1">
-        <span className="text-[14px] text-muted">
-          {t("rec.motion")} · {t("rec.side")}: {t("practice.for")}
-        </span>
-        <p className="serif text-[22px] leading-snug">{PLACEMENT.motion}</p>
-      </div>
+      <Hero label={t("placementTitle")}>
+        <div className="grid gap-2">
+          <h1 className="t-h2" style={{ color: "inherit" }}>
+            {t("placementTitle")}
+          </h1>
+          <p style={{ color: "#b9b3a8" }}>{t("home.placementShort")}</p>
+        </div>
+        <div className="grid gap-3 rounded-[20px] p-5" style={{ background: "#26221c" }}>
+          <div className="flex flex-wrap gap-2">
+            <Chip>{t("practice.for")}</Chip>
+            <Chip>{t("lesson.aim", { time: `${Math.floor(PLACEMENT.targetSeconds / 60)}:${String(PLACEMENT.targetSeconds % 60).padStart(2, "0")}` })}</Chip>
+          </div>
+          <p className="serif text-[24px] leading-snug">{PLACEMENT.motion}</p>
+        </div>
+      </Hero>
       {e.ok ? (
         <Recorder kind="placement" side={PLACEMENT.side} targetSeconds={PLACEMENT.targetSeconds} maxSeconds={e.maxSeconds} minSeconds={e.minSeconds} title={t("placementTitle")} />
       ) : (

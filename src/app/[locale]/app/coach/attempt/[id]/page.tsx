@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ArrowRight, Check, Gauge, MessageCircleWarning, RotateCcw, Target, Timer, Trophy, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { AttemptWaiting, ListenFeedback, SpeakButton } from "@/components/coach/CoachClient";
-import { Bar, requireStudent, Stars } from "@/components/coach/parts";
+import { Bar, GOLD, Hero, requireStudent, Stars, Tile } from "@/components/coach/parts";
 import { SKILL, SKILLS } from "@/server/coach/curriculum";
 import { coachHome, feedbackScript, getAttempt } from "@/server/services/speech";
 
@@ -67,20 +68,39 @@ export default async function AttemptPage({ params }: { params: Promise<{ locale
   return (
     <>
       {back}
-      <header className="grid gap-3">
-        <p className="text-[15px] text-muted">{a.title}</p>
+      <Hero label={t("card.barsTitle")}>
+        <p className="text-[14px]" style={{ color: "#b9b3a8" }}>
+          {a.title}
+        </p>
         <h1 className="sr-only">{t("card.barsTitle")}</h1>
-        <Stars n={a.stars ?? 1} label={t("card.stars", { n: a.stars ?? 1 })} size={36} />
-        <p className="serif text-[22px] leading-snug">{f.encouragement}</p>
-        {f.usedFallback && <p className="text-[14px] text-muted">{t("card.fallback")}</p>}
+        <Stars n={a.stars ?? 1} label={t("card.stars", { n: a.stars ?? 1 })} size={44} />
+        <p className="serif text-[24px] leading-snug">{f.encouragement}</p>
+        {f.usedFallback && (
+          <p className="text-[14px]" style={{ color: "#b9b3a8" }}>
+            {t("card.fallback")}
+          </p>
+        )}
         <ListenFeedback id={a.id} text={feedbackScript(f)} />
-      </header>
+      </Hero>
 
       {f.focus && a.lesson && (
-        <div className={`card grid gap-2 !p-5 ${f.focus.passed ? "border-ink" : ""}`}>
-          <p className="t-h3">{f.focus.passed ? t("card.passed") : t("card.notYet")}</p>
-          {f.focus.score !== null && <p className="text-[15px] text-muted">{t("card.focusScore", { skill: SKILL[f.focus.skill].name, n: f.focus.score, pass: a.lesson.drill.passScore })}</p>}
-          {f.focus.feedback && <p>{f.focus.feedback}</p>}
+        <div className="card flex items-start gap-4 !p-5" style={f.focus.passed ? { background: GOLD } : undefined}>
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full" style={{ background: f.focus.passed ? "#1a1712" : "#fbf7ef", color: f.focus.passed ? GOLD : "#1a1712" }} aria-hidden="true">
+            {f.focus.passed ? <Trophy size={22} /> : <Target size={22} />}
+          </span>
+          <div className="grid gap-1">
+            <p className="t-h3">{f.focus.passed ? t("card.passed") : t("card.notYet")}</p>
+            {f.focus.score !== null && <p className="text-[15px] tabular">{t("card.focusScore", { skill: SKILL[f.focus.skill].name, n: f.focus.score, pass: a.lesson.drill.passScore })}</p>}
+            {f.focus.feedback && <p className="text-[15px]">{f.focus.feedback}</p>}
+          </div>
+        </div>
+      )}
+
+      {m && (
+        <div className="grid grid-cols-3 gap-3">
+          <Tile icon={<Gauge size={18} />} value={String(m.wpm)} label={t("card.wpm")} hot={m.wpm >= 110 && m.wpm <= 160} />
+          <Tile icon={<MessageCircleWarning size={18} />} value={String(m.fillerCount)} label={t("card.fillers")} />
+          <Tile icon={<Timer size={18} />} value={`${Math.floor(m.durationSeconds / 60)}:${String(Math.round(m.durationSeconds % 60)).padStart(2, "0")}`} label={t("card.time")} />
         </div>
       )}
 
@@ -91,11 +111,21 @@ export default async function AttemptPage({ params }: { params: Promise<{ locale
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="card grid content-start gap-2 !p-5">
-              <span className="text-[14px] font-medium text-muted">{t("card.youSaid")}</span>
+              <span className="flex items-center gap-2 text-[14px] font-medium text-muted">
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-[#ece4d4]" aria-hidden="true">
+                  <X size={14} strokeWidth={2.5} />
+                </span>
+                {t("card.youSaid")}
+              </span>
               <p className="text-muted">“{f.betterLine.original}”</p>
             </div>
-            <div className="card grid content-start gap-2 border-ink !p-5">
-              <span className="text-[14px] font-medium">{t("card.coachSays")}</span>
+            <div className="card grid content-start gap-2 !p-5" style={{ borderColor: GOLD, borderWidth: 2 }}>
+              <span className="flex items-center gap-2 text-[14px] font-medium">
+                <span className="grid h-6 w-6 place-items-center rounded-full" style={{ background: GOLD }} aria-hidden="true">
+                  <Check size={14} strokeWidth={2.5} />
+                </span>
+                {t("card.coachSays")}
+              </span>
               <p className="font-medium">“{f.betterLine.improved}”</p>
               <SpeakButton text={f.betterLine.improved} />
             </div>
@@ -104,30 +134,31 @@ export default async function AttemptPage({ params }: { params: Promise<{ locale
         </section>
       )}
 
-      <section className="grid gap-5 sm:grid-cols-2">
-        <div className="grid content-start gap-2">
-          <h2 className="text-[16px] font-medium">{t("card.wellDone")}</h2>
-          <ul className="grid list-disc gap-2 pl-5">
-            {f.strengths.map((x) => (
-              <li key={x}>{x}</li>
-            ))}
-          </ul>
-        </div>
-        <div className="grid content-start gap-2">
-          <h2 className="text-[16px] font-medium">{t("card.nextTime")}</h2>
-          <ul className="grid list-disc gap-2 pl-5">
-            {f.nextSteps.map((x) => (
-              <li key={x}>{x}</li>
-            ))}
-          </ul>
-        </div>
+      <section className="grid gap-3 sm:grid-cols-2">
+        {[
+          { title: t("card.wellDone"), items: f.strengths, icon: <Check size={14} strokeWidth={2.5} />, bg: GOLD },
+          { title: t("card.nextTime"), items: f.nextSteps, icon: <ArrowRight size={14} strokeWidth={2.5} />, bg: "#fbf7ef" },
+        ].map((g) => (
+          <div key={g.title} className="card grid content-start gap-3 !p-5">
+            <h2 className="font-medium">{g.title}</h2>
+            <ul className="grid gap-2" role="list">
+              {g.items.map((x) => (
+                <li key={x} className="flex items-start gap-3 text-[15px]">
+                  <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full" style={{ background: g.bg }} aria-hidden="true">
+                    {g.icon}
+                  </span>
+                  {x}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </section>
 
       <section className="grid gap-4" aria-labelledby="bars">
         <h2 id="bars" className="t-h3">
           {t("card.barsTitle")}
         </h2>
-        {m && <p className="text-[15px] text-muted tabular">{t("card.numbers", { wpm: m.wpm, fillers: m.fillerCount, seconds: Math.round(m.durationSeconds) })}</p>}
         <div className="grid gap-4 sm:grid-cols-2">
           {(["structure", "argument", "timekeeping", "pace", "fillers", "confidence", "clarity"] as const)
             .filter((k) => b[k] !== null && b[k] !== undefined)
@@ -159,11 +190,12 @@ export default async function AttemptPage({ params }: { params: Promise<{ locale
 
       <div className="btn-row">
         {home.next && home.eligibility.ok ? (
-          <Link href={`/app/coach/lesson/${home.next.key}`} className="btn btn--lg">
+          <Link href={`/app/coach/lesson/${home.next.key}`} className="btn btn--lg btn--gold">
             {home.next.key === a.lesson?.key ? t("card.tryAgain") : t("card.nextLesson")}
           </Link>
         ) : null}
-        <Link href={retryHref} className="uline text-[16px] font-medium">
+        <Link href={retryHref} className="inline-flex items-center gap-2 uline text-[16px] font-medium">
+          <RotateCcw size={18} aria-hidden="true" />
           {a.lesson ? t("card.tryAgain") : t("card.practiseAgain")}
         </Link>
         {a.kind === "free" && otherSide && (
