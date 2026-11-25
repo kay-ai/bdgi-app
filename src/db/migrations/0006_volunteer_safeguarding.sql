@@ -1,0 +1,3 @@
+ALTER TABLE "volunteer_profile" ADD COLUMN "safeguarding_checked_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "volunteer_profile" ADD COLUMN "safeguarding_checked_by" uuid;--> statement-breakpoint
+ALTER TABLE "volunteer_profile" ADD CONSTRAINT "volunteer_profile_safeguarding_checked_by_person_id_fk" FOREIGN KEY ("safeguarding_checked_by") REFERENCES "public"."person"("id") ON DELETE no action ON UPDATE no action;

@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { GraduationCap, HandCoins, HandHeart, LayoutDashboard, Menu, MessageSquareText, Mic, School, UsersRound, X } from "lucide-react";
+import { GraduationCap, HandCoins, HandHeart, LayoutDashboard, Menu, MessageSquareText, Mic, School, Users, UsersRound, X } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 
 const ICONS = {
   home: LayoutDashboard,
   students: GraduationCap,
+  groups: Users,
   volunteers: HandHeart,
   schools: School,
   donations: HandCoins,

@@ -228,6 +228,12 @@ export const volunteerProfile = pgTable("volunteer_profile", {
   codeOfConductSignedAt: tz("code_of_conduct_signed_at"),
   codeOfConductVersion: text("code_of_conduct_version"),
   trainingCompletedAt: tz("training_completed_at"),
+  /**
+   * Staff confirmed her safeguarding checks (references, ID, briefing) while the training modules
+   * of spec/06 §3.2 are not built yet. Either this or finished training lets her coach a group (D-021).
+   */
+  safeguardingCheckedAt: tz("safeguarding_checked_at"),
+  safeguardingCheckedBy: uuid("safeguarding_checked_by").references((): AnyPgColumn => person.id),
   activatedAt: tz("activated_at"),
   pausedReason: text("paused_reason"),
   ...timestamps,
