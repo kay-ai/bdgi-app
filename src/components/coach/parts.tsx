@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
+import { Lock } from "lucide-react";
 import { requireActor } from "@/server/auth/current";
 import { hasRole } from "@/server/permissions/can";
 import type { Eligibility } from "@/server/services/speech";
@@ -53,9 +54,14 @@ export function Bar({ label, value, note, focus }: { label: string; value: numbe
 export async function Blocked({ e }: { e: Exclude<Eligibility, { ok: true }> }) {
   const t = await getTranslations("coach.blocked");
   return (
-    <div className="card grid gap-2 !p-6">
-      <p className="font-medium">{t("title")}</p>
-      <p className="text-muted">{t(e.reason, { cap: e.cap ?? 0 })}</p>
+    <div className="card flex items-start gap-4 !p-5">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#fbf7ef]" aria-hidden="true">
+        <Lock size={20} />
+      </span>
+      <div className="grid gap-1">
+        <p className="font-medium">{t("title")}</p>
+        <p className="text-[15px] text-muted">{t(e.reason, { cap: e.cap ?? 0 })}</p>
+      </div>
     </div>
   );
 }
@@ -75,7 +81,7 @@ function Spark({ label, values, min, max, band, unit, latest }: { label: string;
     .join(" ");
   const shown = values.filter((v): v is number => v !== null);
   return (
-    <figure className="grid gap-1">
+    <figure className="card grid gap-1 !p-4">
       <figcaption className="flex items-baseline justify-between gap-3 text-[15px]">
         <span className="font-medium">{label}</span>
         <span className="tabular text-muted">{latest}</span>
@@ -96,18 +102,73 @@ export async function Trend({ points }: { points: TrendPoint[] }) {
   const last = points.at(-1)!;
   return (
     <section className="grid gap-4" aria-labelledby="trend">
-      <div className="grid gap-1">
-        <h2 id="trend" className="t-h3">
-          {t("title")}
-        </h2>
-        <p className="text-[15px] text-muted">{t("lead", { n: points.length })}</p>
-      </div>
-      <div className="grid gap-6 sm:grid-cols-3">
+      <h2 id="trend" className="t-h3">
+        {t("title")}
+      </h2>
+      <div className="grid gap-3 sm:grid-cols-3">
         <Spark label={t("stars")} values={points.map((p) => p.stars)} min={1} max={5} unit="★" latest={last.stars ? `${last.stars} / 5` : "–"} />
         <Spark label={t("pace")} values={points.map((p) => p.wpm)} min={60} max={220} band={[110, 160]} unit="wpm" latest={last.wpm !== null ? t("wpm", { n: last.wpm }) : "–"} />
         <Spark label={t("fillers")} values={points.map((p) => p.fillersPerMin)} min={0} max={10} band={[0, 2]} unit="/min" latest={last.fillersPerMin !== null ? t("perMin", { n: last.fillersPerMin }) : "–"} />
       </div>
       <p className="text-[13px] text-muted">{t("note")}</p>
     </section>
+  );
+}
+
+/* ---------- Shared pieces of the student pages' look (D-024) ---------- */
+
+export const GOLD = "#FFB800";
+export const RANKS = ["starter", "speaker", "debater", "expert"] as const;
+
+/** The dark card that opens each student page. Buttons inside it turn gold (`.on-dark`). */
+export function Hero({ children, label }: { children: React.ReactNode; label?: string }) {
+  return (
+    <section className="on-dark grid gap-6 rounded-[28px] p-6 sm:p-8" style={{ background: "#1a1712", color: "#fbf7ef" }} aria-label={label}>
+      {children}
+    </section>
+  );
+}
+
+/** A small rounded label: on the dark card by default, or light. */
+export function Chip({ children, light }: { children: React.ReactNode; light?: boolean }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium"
+      style={light ? { background: "#fbf7ef", color: "#1a1712" } : { background: "#2e2922", color: "#fbf7ef" }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** Her rank as a four-step ladder. */
+export async function RankLadder({ rank }: { rank: (typeof RANKS)[number] }) {
+  const tr = await getTranslations("coach.rank");
+  const at = RANKS.indexOf(rank);
+  return (
+    <ol className="grid grid-cols-4 gap-2" aria-label={tr(rank)}>
+      {RANKS.map((r, i) => (
+        <li key={r} className="grid gap-2" aria-current={i === at ? "step" : undefined}>
+          <span className="h-2.5 rounded-full" style={{ background: i <= at ? GOLD : "#3a352d" }} aria-hidden="true" />
+          <span className="text-[13px] leading-tight" style={{ color: i === at ? "#fbf7ef" : "#8f8a80", fontWeight: i === at ? 600 : 400 }}>
+            {tr(r)}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** A big number with an icon and a short label. */
+export function Tile({ icon, value, label, note, hot }: { icon: React.ReactNode; value: string; label: string; note?: string; hot?: boolean }) {
+  return (
+    <div className="card grid content-start gap-1 !p-4">
+      <span className="grid h-9 w-9 place-items-center rounded-full" style={{ background: hot ? GOLD : "#fbf7ef", color: "#1a1712" }} aria-hidden="true">
+        {icon}
+      </span>
+      <span className="t-figure tabular mt-1">{value}</span>
+      <span className="text-[14px] leading-tight">{label}</span>
+      {note && <span className="text-[13px] text-muted tabular">{note}</span>}
+    </div>
   );
 }

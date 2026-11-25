@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Mic, Timer } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { queueSpeech, uploadSpeech } from "./offline-queue";
 
@@ -183,31 +184,37 @@ export function Recorder({ kind, lessonKey, motionId, side, targetSeconds, maxSe
     <div className="card grid gap-6 !p-5 sm:!p-8">
       {phase === "idle" && (
         <>
-          <div className="grid gap-2">
-            <p className="font-medium">{t("tipsTitle")}</p>
-            <ul className="grid list-disc gap-1 pl-5 text-[16px]">
-              <li>{t("tip1")}</li>
-              <li>{t("tip2")}</li>
-              <li>{t("tip3")}</li>
-            </ul>
+          <div className="grid gap-3">
+            <p className="text-[13px] font-medium uppercase tracking-wide text-muted">{t("tipsTitle")}</p>
+            <ol className="grid gap-2 sm:grid-cols-3" role="list">
+              {(["tip1", "tip2", "tip3"] as const).map((k, i) => (
+                <li key={k} className="flex items-center gap-3 rounded-[14px] bg-bg p-3 text-[15px]">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#FFB800] text-[14px] font-semibold text-[#1a1712]" aria-hidden="true">
+                    {i + 1}
+                  </span>
+                  {t(k)}
+                </li>
+              ))}
+            </ol>
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <button type="button" className="btn btn--lg" onClick={start} disabled={!ready}>
+            <button type="button" className="btn btn--lg btn--gold btn--plain" onClick={start} disabled={!ready}>
+              <Mic size={20} aria-hidden="true" />
               {t("start")}
             </button>
             <button
               type="button"
-              className="uline text-[16px] font-medium"
+              className="inline-flex items-center gap-2 uline text-[16px] font-medium"
               disabled={!ready}
               onClick={() => {
                 setPrepLeft(30);
                 setPhase("prep");
               }}
             >
+              <Timer size={18} aria-hidden="true" />
               {t("prep")}
             </button>
           </div>
-          <p className="text-[15px] text-muted">{t("aim", { time: fmt(targetSeconds) })}</p>
         </>
       )}
 

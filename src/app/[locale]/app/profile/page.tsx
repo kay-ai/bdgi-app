@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { ContactDetails } from "@/components/hub/ContactDetails";
 import { StudentProfileForm } from "@/components/hub/StudentProfileForm";
 import { requireActor } from "@/server/auth/current";
@@ -23,12 +24,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
   if (!p) redirect("/sign-in/no-access");
   return (
     <>
-      <div className="grid gap-2">
-        <h1 className="t-h2">{t("title")}</h1>
-        <p className="text-muted">{p.complete ? t("leadDone") : t("lead")}</p>
-      </div>
+      <Link href="/app" className="uline justify-self-start text-[15px]">
+        {t("back")}
+      </Link>
+      <p className="sr-only">{p.complete ? t("leadDone") : t("lead")}</p>
+      <StudentProfileForm locale={locale} firstName={actor.firstName} initial={{ avatarKey: p.avatarKey, dreams: p.dreams, help: p.help, checkin: p.checkin }} />
       <ContactDetails locale={locale} email={p.email} isAdult={p.isAdult} guardian={p.guardian} />
-      <StudentProfileForm locale={locale} initial={{ avatarKey: p.avatarKey, dreams: p.dreams, help: p.help, checkin: p.checkin }} />
     </>
   );
 }
