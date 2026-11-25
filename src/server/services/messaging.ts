@@ -2,6 +2,7 @@ import "server-only";
 import { and, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import { decrypt, encrypt, lookupHash } from "@/lib/crypto";
+import { emailLayout } from "@/server/email/layout";
 import { providerFor } from "@/server/providers";
 import { attachmentsFor } from "./receipts";
 
@@ -186,11 +187,16 @@ async function sendOne(m: MessageRow, now: Date): Promise<void> {
   const [tpl] = m.templateKey ? await db.select().from(s.messageTemplate).where(eq(s.messageTemplate.key, m.templateKey)) : [];
   let res: Awaited<ReturnType<ReturnType<typeof providerFor>["send"]>>;
   try {
+    const body = decrypt(m.bodyRendered);
+    // Subjects may name a variable ({{studentFirstName}}); secrets never appear in subjects.
+    const subject = tpl?.subjectEn ? render(tpl.subjectEn, (m.variables ?? {}) as Record<string, string>) : null;
+    // Email gets the branded layout (D-023); the plain body goes along as the text part.
+    const email = m.channel === "email" ? emailLayout({ subject: subject || "A message from BGDI", body, templateKey: m.templateKey }) : null;
     res = await providerFor(m.channel).send({
       to: decrypt(m.toAddress),
-      body: decrypt(m.bodyRendered),
-      // Subjects may name a variable ({{studentFirstName}}); secrets never appear in subjects.
-      subject: tpl?.subjectEn ? render(tpl.subjectEn, (m.variables ?? {}) as Record<string, string>) : null,
+      body: email?.text ?? body,
+      subject,
+      html: email?.html ?? null,
       attachments: await attachmentsFor(m.templateKey, m.variables),
     });
   } catch (e) {
