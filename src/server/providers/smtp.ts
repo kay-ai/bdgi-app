@@ -13,7 +13,7 @@ export function smtpProvider(): MessageProvider {
   const port = Number(process.env.SMTP_PORT || 587);
   return {
     name: "smtp",
-    async send({ to, body, subject, attachments }) {
+    async send({ to, body, subject, html, attachments }) {
       const nodemailer = await import("nodemailer");
       const transport = nodemailer.createTransport({
         host,
@@ -27,6 +27,7 @@ export function smtpProvider(): MessageProvider {
           to,
           subject: subject || "A message from BGDI",
           text: body,
+          ...(html ? { html } : {}),
           attachments: attachments?.map((a) => ({ filename: a.filename, contentType: a.contentType, content: Buffer.from(a.content) })),
         });
         return { ok: true, providerId: info.messageId };
