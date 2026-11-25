@@ -23,6 +23,7 @@ export default async function ConsoleLayout({ children, params }: { children: Re
   const items: (NavItem & { show: boolean })[] = [
     { href: "/console", label: t("home"), icon: "home", show: true },
     { href: "/console/students", label: t("students"), icon: "students", count: counts.students, countLabel: waiting(counts.students), show: can(actor, "intake.review") },
+    { href: "/console/groups", label: t("groupsNav"), icon: "groups", show: can(actor, "cohort.manage") },
     {
       href: "/console/volunteers",
       label: t("volunteers"),

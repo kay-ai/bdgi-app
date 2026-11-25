@@ -1,11 +1,19 @@
 import { redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
 import { Link } from "@/i18n/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { db, schema as s } from "@/db";
+import { Badges, GroupCard, ProgressCard } from "@/components/hub/StudentProgress";
 import { requireActor } from "@/server/auth/current";
 import { hasRole, homeFor } from "@/server/permissions/can";
+import { eligibility } from "@/server/services/speech";
 import { profileComplete } from "@/server/services/student-profile";
+import { studentGroups, studentProgress } from "@/server/services/student-progress";
 
-/** Student home. The speech coach comes first; sessions and badges arrive with M6. */
+// Personal to the signed-in student: never pre-rendered or cached.
+export const dynamic = "force-dynamic";
+
+/** Student home (spec/06 §1.1): her group, her own progress and badges, and the speech coach. */
 export default async function StudentHome({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -15,7 +23,14 @@ export default async function StudentHome({ params }: { params: Promise<{ locale
     redirect(home === "/app" ? "/sign-in/no-access" : home);
   }
   const t = await getTranslations("hub");
-  const complete = await profileComplete(actor.personId);
+  const [complete, progress, groups, elig, [me]] = await Promise.all([
+    profileComplete(actor.personId),
+    studentProgress(actor.personId),
+    studentGroups(actor.personId),
+    eligibility(actor.personId),
+    db.select({ status: s.person.status }).from(s.person).where(eq(s.person.id, actor.personId)),
+  ]);
+  const group = groups.find((g) => g.current) ?? null;
   return (
     <>
       <h1 className="t-h2">{t("hello", { name: actor.firstName })}</h1>
@@ -27,15 +42,14 @@ export default async function StudentHome({ params }: { params: Promise<{ locale
           <span className="font-medium">{t("finishOpen")} →</span>
         </Link>
       )}
-      <div className="card grid gap-2 !p-6">
-        <p className="font-medium">{t("studentTitle")}</p>
-        <p className="text-muted">{t("studentLead")}</p>
-      </div>
+      <GroupCard group={group} status={me?.status ?? "active"} />
+      <ProgressCard p={progress} canPractise={elig.ok} />
       <Link href="/app/coach" className="card grid gap-2 !p-6">
         <span className="t-h3">{t("coachTitle")}</span>
         <span className="text-muted">{t("coachLead")}</span>
         <span className="font-medium">{t("coachOpen")} →</span>
       </Link>
+      <Badges badges={progress.badges} />
     </>
   );
 }

@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { Decision } from "@/components/console/Decision";
 import { Pager, SearchBox, StatusTabs, one } from "@/components/console/ListParts";
 import { formatDate } from "@/lib/format";
@@ -23,12 +24,20 @@ export default async function VolunteersPage({ params, searchParams }: { params:
   const all = Object.values(list.counts).reduce((a, b) => a + b, 0);
   const mayDecide = can(actor, "volunteer.advance_stage");
   const st = (v: string) => t(`people.vs_${v}` as "people.vs_active");
+  const tg = await getTranslations("console.groups");
 
   return (
     <>
-      <div className="grid gap-2">
-        <h1 className="t-h2">{t("volunteers")}</h1>
-        <p className="text-muted">{t("people.volunteersLead")}</p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="grid gap-2">
+          <h1 className="t-h2">{t("volunteers")}</h1>
+          <p className="text-muted">{t("people.volunteersLead")}</p>
+        </div>
+        {mayDecide && (
+          <Link href="/console/volunteers/new" className="btn">
+            {tg("c.title")}
+          </Link>
+        )}
       </div>
       <StatusTabs
         base="/console/volunteers"

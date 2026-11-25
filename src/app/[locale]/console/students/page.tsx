@@ -63,9 +63,9 @@ export default async function StudentsPage({ params, searchParams }: { params: P
               {list.rows.map((r) => (
                 <tr key={r.id}>
                   <td>
-                    <span className="font-medium">
+                    <Link href={`/console/students/${r.id}`} className="uline font-medium">
                       {r.firstName} {r.surname}
-                    </span>
+                    </Link>
                     <div className="text-[13px] text-muted">{[r.age ? t("people.age", { n: r.age }) : null, r.classLevel].filter(Boolean).join(" · ")}</div>
                     {seeSpeech && (r.aiPractice || (r.age ?? 0) >= 18) && (
                       <Link href={`/console/ai/student/${r.id}`} className="uline text-[13px]">
