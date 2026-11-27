@@ -82,7 +82,7 @@ export default async function VolunteerHome({ params }: { params: Promise<{ loca
                 ) : (
                   <p className="text-[14px] text-muted">{tl("noneScheduled")}</p>
                 )}
-                {!g.live && g.status !== "completed" && g.status !== "cancelled" && <QuickAddSession cohortId={g.id} />}
+                {!g.live && g.status !== "completed" && g.status !== "cancelled" && <QuickAddSession cohortId={g.id} offerStartNow={!g.next?.canStart} />}
                 <Link href="/app/chat" className="uline inline-flex w-fit items-center gap-2 text-[15px]">
                   <MessageCircle size={18} aria-hidden="true" />
                   {tl("groupChat")}

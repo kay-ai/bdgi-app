@@ -2053,7 +2053,8 @@
     "time": "Time (Lagos)",
     "length": "Length",
     "minutes": "{n} min",
-    "addSession": "Add session"
+    "addSession": "Add session",
+    "close": "Cancel"
   },
   "chat": {
     "title": "Messages",

@@ -57,7 +57,7 @@ function lagosNow(roundUp: boolean) {
  * A coach's quick way to plan a session for her group (D-025): "Start one now" adds a session for
  * this minute and starts it; "Schedule" opens a short form already set to today, next quarter hour.
  */
-export function QuickAddSession({ cohortId }: { cohortId: string }) {
+export function QuickAddSession({ cohortId, offerStartNow = true }: { cohortId: string; offerStartNow?: boolean }) {
   const t = useTranslations("live");
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -89,10 +89,12 @@ export function QuickAddSession({ cohortId }: { cohortId: string }) {
   return (
     <div className="grid gap-3">
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="btn btn--plain !min-h-11" disabled={pending} onClick={startNow}>
-          <Radio size={18} aria-hidden="true" />
-          {t("startNow")}
-        </button>
+        {offerStartNow && (
+          <button type="button" className="btn btn--plain !min-h-11" disabled={pending} onClick={startNow}>
+            <Radio size={18} aria-hidden="true" />
+            {t("startNow")}
+          </button>
+        )}
         <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#fbf7ef] px-4 text-[15px] font-medium" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
           <CalendarPlus size={18} aria-hidden="true" />
           {t("schedule")}
@@ -100,7 +102,7 @@ export function QuickAddSession({ cohortId }: { cohortId: string }) {
       </div>
       {open && (
         <form
-          className="grid gap-3 rounded-[16px] bg-[#fbf7ef] p-4 sm:grid-cols-3 sm:items-end"
+          className="grid grid-cols-2 gap-3 rounded-[16px] bg-[#fbf7ef] p-4"
           onSubmit={(e) => {
             e.preventDefault();
             schedule();
@@ -114,7 +116,7 @@ export function QuickAddSession({ cohortId }: { cohortId: string }) {
             <label htmlFor={`${cohortId}-qt`}>{t("time")}</label>
             <input id={`${cohortId}-qt`} className="input" type="time" required step={300} value={form.time} onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))} />
           </div>
-          <div className="field">
+          <div className="field col-span-2">
             <label htmlFor={`${cohortId}-ql`}>{t("length")}</label>
             <select id={`${cohortId}-ql`} className="input" value={form.duration} onChange={(e) => setForm((f) => ({ ...f, duration: Number(e.target.value) }))}>
               {[30, 45, 60, 90, 120].map((m) => (
@@ -124,12 +126,12 @@ export function QuickAddSession({ cohortId }: { cohortId: string }) {
               ))}
             </select>
           </div>
-          <div className="flex flex-wrap items-center gap-3 sm:col-span-3">
+          <div className="col-span-2 flex flex-wrap items-center gap-3">
             <button type="submit" className="btn btn--plain" disabled={pending}>
               {pending ? t("saving") : t("addSession")}
             </button>
             <button type="button" className="uline text-[15px]" onClick={() => setOpen(false)}>
-              {t("cancel")}
+              {t("close")}
             </button>
           </div>
         </form>
