@@ -1,6 +1,6 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Video } from "lucide-react";
-import { Link } from "@/i18n/navigation";
+import { sessionHref } from "@/i18n/navigation";
 import { GOLD } from "@/components/coach/parts";
 
 /**
@@ -9,6 +9,7 @@ import { GOLD } from "@/components/coach/parts";
  */
 export async function LiveBanner({ live }: { live: { id: string; cohortName: string } }) {
   const t = await getTranslations("live");
+  const locale = await getLocale();
   return (
     <section className="on-dark grid gap-4 rounded-[28px] p-6 sm:flex sm:items-center sm:justify-between" style={{ background: "#1a1712", color: "#fbf7ef" }} aria-labelledby="live-now">
       <div className="grid gap-1">
@@ -23,10 +24,10 @@ export async function LiveBanner({ live }: { live: { id: string; cohortName: str
           {t("bannerTitle", { name: live.cohortName })}
         </h2>
       </div>
-      <Link href={`/app/session/${live.id}`} className="btn btn--gold btn--plain btn--lg live-pulse w-full sm:w-auto">
+      <a href={sessionHref(live.id, locale)} className="btn btn--gold btn--plain btn--lg live-pulse w-full sm:w-auto">
         <Video size={20} aria-hidden="true" />
         {t("join")}
-      </Link>
+      </a>
     </section>
   );
 }

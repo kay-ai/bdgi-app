@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { CalendarPlus, Radio, Square } from "lucide-react";
-import { useRouter } from "@/i18n/navigation";
+import { sessionHref, useRouter } from "@/i18n/navigation";
 import { addSessionAction, attendanceAction, endSessionAction, rosterAction, startSessionAction } from "@/app/[locale]/app/session/actions";
 
 /** "Start session": opens the room, emails the students, then takes the coach in (D-025). */
 export function StartSession({ sessionId, disabled }: { sessionId: string; disabled?: boolean }) {
   const t = useTranslations("live");
-  const router = useRouter();
+  const locale = useLocale();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   return (
@@ -23,7 +23,7 @@ export function StartSession({ sessionId, disabled }: { sessionId: string; disab
           start(async () => {
             setErr(null);
             const r = await startSessionAction(sessionId);
-            if (r.ok) router.push(`/app/session/${sessionId}`);
+            if (r.ok) window.location.assign(sessionHref(sessionId, locale));
             else setErr(t(`err.${["too_early", "too_late", "not_planned", "denied"].includes(r.code) ? r.code : "error"}` as never));
           })
         }
@@ -59,6 +59,7 @@ function lagosNow(roundUp: boolean) {
  */
 export function QuickAddSession({ cohortId, offerStartNow = true }: { cohortId: string; offerStartNow?: boolean }) {
   const t = useTranslations("live");
+  const locale = useLocale();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
@@ -74,7 +75,7 @@ export function QuickAddSession({ cohortId, offerStartNow = true }: { cohortId: 
       if (!r.ok || !r.id) return setErr(fail(r.ok ? "error" : r.code));
       const s = await startSessionAction(r.id);
       if (!s.ok) return setErr(fail(s.code));
-      router.push(`/app/session/${r.id}`);
+      window.location.assign(sessionHref(r.id, locale));
     });
 
   const schedule = () =>
