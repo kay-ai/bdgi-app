@@ -29,6 +29,7 @@ export const BUTTON_LABELS: Record<string, string> = {
   "consent.thanks": "Change my choices",
   "consent.declined_ack": "Change my answer",
   "consent.school_notice": "Learn more",
+  "session.started": "Join the session",
   "student.endline": "Tell us how it went",
   "student.completed": "Get the certificate",
   "volunteer.application_received": "Track my application",

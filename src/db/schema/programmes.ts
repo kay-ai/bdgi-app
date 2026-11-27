@@ -141,6 +141,12 @@ export const session = pgTable(
     notes: text("notes"),
     heldMarkedBy: uuid("held_marked_by").references(() => person.id),
     reminderSentAt: tz("reminder_sent_at"),
+    /** D-025: a coach starts the session live; students see a Join button until it ends. */
+    liveStartedAt: tz("live_started_at"),
+    liveEndedAt: tz("live_ended_at"),
+    startedBy: uuid("started_by").references(() => person.id),
+    /** The video room (its URL), made when the session starts and removed when it ends. */
+    videoRoom: text("video_room"),
     ...timestamps,
   },
   (t) => [index("session_cohort_starts_idx").on(t.cohortId, t.startsAt)],
@@ -338,3 +344,64 @@ export const certificate = pgTable("certificate", {
   revokedAt: tz("revoked_at"),
   ...timestamps,
 });
+
+/* ---------- Chat (D-025) ---------- */
+
+/** A group's chat, or a private chat between a coach and one student. Staff can read both. */
+export const chatThread = pgTable(
+  "chat_thread",
+  {
+    id: id(),
+    kind: text("kind", { enum: ["group", "direct"] }).notNull(),
+    cohortId: uuid("cohort_id")
+      .notNull()
+      .references(() => cohort.id),
+    /** For a direct chat: the coach and the student, so the pair has one thread per group. */
+    coachId: uuid("coach_id").references(() => person.id),
+    studentId: uuid("student_id").references(() => person.id),
+    lastMessageAt: tz("last_message_at"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("chat_thread_group_uq").on(t.cohortId).where(sql`kind = 'group'`),
+    uniqueIndex("chat_thread_direct_uq").on(t.cohortId, t.coachId, t.studentId).where(sql`kind = 'direct'`),
+  ],
+);
+
+/** When each person last read a thread, for unread counts. */
+export const chatRead = pgTable(
+  "chat_read",
+  {
+    id: id(),
+    threadId: uuid("thread_id")
+      .notNull()
+      .references(() => chatThread.id),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => person.id),
+    lastReadAt: tz("last_read_at").notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("chat_read_uq").on(t.threadId, t.personId)],
+);
+
+export const chatMessage = pgTable(
+  "chat_message",
+  {
+    id: id(),
+    threadId: uuid("thread_id")
+      .notNull()
+      .references(() => chatThread.id),
+    senderId: uuid("sender_id")
+      .notNull()
+      .references(() => person.id),
+    /** Encrypted. */
+    body: text("body").notNull(),
+    /** Set when someone reports it: it is hidden from the chat and a safeguarding case is opened. */
+    reportedBy: uuid("reported_by").references(() => person.id),
+    reportedAt: tz("reported_at"),
+    caseId: uuid("case_id"),
+    ...timestamps,
+  },
+  (t) => [index("chat_message_thread_idx").on(t.threadId, t.createdAt)],
+);
