@@ -3,10 +3,12 @@ import {
   ArrowRight,
   Award,
   BookOpen,
+  CalendarClock,
   Crown,
   Flame,
   GraduationCap,
   Medal,
+  MessageCircle,
   Mic,
   Sparkles,
   Star,
@@ -243,7 +245,7 @@ export async function Badges({ p }: { p: StudentProgress }) {
 }
 
 /** Her group in one compact card, or one line about what happens next. */
-export async function GroupCard({ group, status }: { group: StudentGroup | null; status: string }) {
+export async function GroupCard({ group, status, next }: { group: StudentGroup | null; status: string; next?: Date | null }) {
   const t = await getTranslations("hub.group");
   const format = await getFormatter();
   if (!group) {
@@ -280,6 +282,12 @@ export async function GroupCard({ group, status }: { group: StudentGroup | null;
         {when.length > 0 ? when.join(" · ") : group.school}
         {!started && ` · ${t("startsOn", { date: format.dateTime(starts, { day: "numeric", month: "short" }) })}`}
       </p>
+      {next && (
+        <p className="flex items-center gap-2 text-[15px] font-medium">
+          <CalendarClock size={18} aria-hidden="true" />
+          {t("nextSession", { when: format.dateTime(next, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Lagos" }) })}
+        </p>
+      )}
       <ul className="flex flex-wrap gap-2" role="list" aria-label={t("coachesLabel")}>
         {group.coaches.length ? (
           group.coaches.map((c, i) => (
@@ -295,6 +303,10 @@ export async function GroupCard({ group, status }: { group: StudentGroup | null;
           <li className="text-[14px] text-muted">{t("noCoach")}</li>
         )}
       </ul>
+      <Link href="/app/chat" className="uline inline-flex w-fit items-center gap-2 text-[15px] font-medium">
+        <MessageCircle size={18} aria-hidden="true" />
+        {t("chatLink")}
+      </Link>
     </section>
   );
 }

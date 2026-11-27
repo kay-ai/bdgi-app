@@ -2,9 +2,12 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { AddStudents, AssignCoach, GroupForm, RemoveMember } from "@/components/console/GroupForms";
+import { AddSession, CancelSession, GenerateSessions } from "@/components/console/GroupSessions";
 import { formatDate } from "@/lib/format";
 import { requirePermission } from "@/server/auth/current";
+import { groupChats } from "@/server/services/chat";
 import { coachCandidates, groupDetail, groupFormOptions } from "@/server/services/console-groups";
+import { groupSessions } from "@/server/services/sessions";
 
 export const metadata = { title: "Group" };
 export const dynamic = "force-dynamic";
@@ -19,7 +22,15 @@ export default async function GroupPage({ params }: { params: Promise<{ locale: 
   const t = await getTranslations("console.groups");
   const g = await groupDetail(actor, id);
   if (!g) notFound();
-  const [options, candidates] = await Promise.all([groupFormOptions(actor), g.canManage ? coachCandidates(actor, id) : Promise.resolve([])]);
+  const [options, candidates, sessions, chats] = await Promise.all([
+    groupFormOptions(actor),
+    g.canManage ? coachCandidates(actor, id) : Promise.resolve([]),
+    groupSessions(id),
+    groupChats(actor, id),
+  ]);
+  const ts = await getTranslations("console.groups.sessions");
+  const tc = await getTranslations("console.groups.chats");
+  const at = (x: Date) => new Intl.DateTimeFormat("en-NG", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Lagos" }).format(x);
   const c = g.group;
   const open = c.status !== "completed" && c.status !== "cancelled";
   const free = Math.max(0, c.capacity - g.students.length);
@@ -109,6 +120,81 @@ export default async function GroupPage({ params }: { params: Promise<{ locale: 
         )}
         {g.canManage && open && (free > 0 ? <AddStudents cohortId={c.id} free={free} /> : <p className="text-muted">{t("fullLead")}</p>)}
       </section>
+
+      <section className="grid gap-3" aria-labelledby="sessions">
+        <h2 id="sessions" className="t-h3">
+          {ts("title", { n: sessions.filter((x) => x.status !== "cancelled").length })}
+        </h2>
+        {sessions.length === 0 ? (
+          <p className="text-muted">{ts("none")}</p>
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <caption className="sr-only">{ts("title", { n: sessions.length })}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{ts("when")}</th>
+                  <th scope="col">{ts("status")}</th>
+                  <th scope="col">{ts("present")}</th>
+                  <th scope="col">
+                    <span className="sr-only">{t("actions")}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {sessions.map((x) => (
+                  <tr key={x.id}>
+                    <td className="whitespace-nowrap tabular">
+                      {at(x.startsAt)}
+                      <div className="text-[13px] text-muted">{[ts("minutes", { n: x.durationMinutes }), x.venue].filter(Boolean).join(" · ")}</div>
+                    </td>
+                    <td>{x.live ? <span className="badge">{ts("live")}</span> : ts(`st.${x.status}` as "st.planned")}</td>
+                    <td className="tabular">{x.status === "cancelled" ? "–" : x.present}</td>
+                    <td>
+                      {x.live ? (
+                        <Link href={`/app/session/${x.id}`} className="uline text-[14px]">
+                          {ts("open")}
+                        </Link>
+                      ) : (
+                        g.canManage && x.status === "planned" && <CancelSession sessionId={x.id} />
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {g.canManage && open && (
+          <div className="grid gap-3">
+            <GenerateSessions cohortId={c.id} />
+            <p className="text-[14px] text-muted">{ts("generateLead")}</p>
+            <AddSession cohortId={c.id} defaultTime={c.meetingTime?.slice(0, 5) ?? ""} defaultVenue={c.venue ?? ""} />
+          </div>
+        )}
+      </section>
+
+      {chats.length > 0 && (
+        <section className="grid gap-3" aria-labelledby="chats">
+          <h2 id="chats" className="t-h3">
+            {tc("title")}
+          </h2>
+          <p className="text-[15px] text-muted">{tc("lead")}</p>
+          <ul className="grid gap-2" role="list">
+            {chats.map((ch) => (
+              <li key={ch.id}>
+                <Link href={`/console/chat/${ch.id}`} className="card flex flex-wrap items-center justify-between gap-3 !p-4">
+                  <span className="grid">
+                    <span className="font-medium">{ch.kind === "group" ? tc("groupTitle", { name: c.name }) : tc("directTitle", { coach: ch.coach, student: ch.student })}</span>
+                    <span className="text-[13px] text-muted">{ch.lastMessageAt ? tc("last", { date: formatDate(ch.lastMessageAt, locale) }) : tc("empty")}</span>
+                  </span>
+                  {ch.reported > 0 && <span className="badge">{tc("reported", { n: ch.reported })}</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {g.former.length > 0 && (
         <section className="grid gap-2" aria-labelledby="former">

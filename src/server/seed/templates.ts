@@ -247,6 +247,26 @@ export const messageTemplates = [
     "note": "(`when` = \"tomorrow\" or \"today\")"
   },
   {
+    "key": "session.started",
+    "category": "utility",
+    "channels": [
+      "email",
+      "whatsapp",
+      "sms"
+    ],
+    "subjectEn": "Your BGDI session has started",
+    "bodyEn": "{{firstName}}, {{cohortName}} has started with {{coachName}}. Join now: {{link}}",
+    "variables": [
+      "firstName",
+      "cohortName",
+      "coachName",
+      "link"
+    ],
+    "allowBeforeConsent": false,
+    "ignoresQuietHours": true,
+    "note": "D-025: sent once to each student when a coach starts the live session"
+  },
+  {
     "key": "session.cancelled",
     "category": "utility",
     "channels": [

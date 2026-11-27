@@ -50,6 +50,13 @@
       "when": 1795567127475,
       "tag": "0006_volunteer_safeguarding",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795686969961,
+      "tag": "0007_live_sessions_chat",
+      "breakpoints": true
     }
   ]
 }

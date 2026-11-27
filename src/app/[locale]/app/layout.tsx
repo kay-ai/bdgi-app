@@ -8,6 +8,7 @@ import { SignOutForm } from "@/components/SignOutForm";
 import { currentSession, requireActor } from "@/server/auth/current";
 import { profilesForUser } from "@/server/auth/sessions";
 import { hasRole, isStaff } from "@/server/permissions/can";
+import { unreadCount } from "@/server/services/chat";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
@@ -24,6 +25,9 @@ export default async function HubLayout({ children, params }: { children: ReactN
   const profiles = row ? await profilesForUser(row.user.id) : [];
   const me = profiles.find((p) => p.personId === actor.personId);
   const t = await getTranslations();
+  // D-025: students and coaches chat with their group; show how many messages are new.
+  const chats = hasRole(actor, "student") || hasRole(actor, "volunteer");
+  const unread = chats ? await unreadCount(actor.personId) : 0;
   return (
     <div className="min-h-svh bg-bg">
       <a href="#hub-main" className="skip-link">
@@ -34,7 +38,18 @@ export default async function HubLayout({ children, params }: { children: ReactN
           <Link href="/app" className="logo">
             <Logo label={t("meta.siteName")} height={32} />
           </Link>
-          <div className="flex items-center gap-4 text-[15px]">
+          <div className="flex items-center gap-3 whitespace-nowrap text-[15px] sm:gap-4">
+            {chats && (
+              <Link href="/app/chat" className="uline inline-flex items-center gap-1.5">
+                {t("chat.title")}
+                {unread > 0 && (
+                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#FFB800] px-1.5 text-[12px] font-semibold text-[#1a1712] no-underline tabular">
+                    <span className="sr-only">{t("chat.unread", { n: unread })}</span>
+                    <span aria-hidden="true">{unread > 99 ? "99+" : unread}</span>
+                  </span>
+                )}
+              </Link>
+            )}
             {hasRole(actor, "student") && (
               <Link href="/app/profile" className="uline">
                 {t("hub.profileLink")}
@@ -48,12 +63,12 @@ export default async function HubLayout({ children, params }: { children: ReactN
             {profiles.length > 1 ? (
               <Link href="/sign-in/who" className="flex items-center gap-2 uline" aria-label={t("hub.switchProfile", { name: actor.firstName })}>
                 {me && <Avatar avatarKey={me.avatarKey} size={32} />}
-                <span>{actor.firstName}</span>
+                <span className="max-sm:sr-only">{actor.firstName}</span>
               </Link>
             ) : (
               <span className="flex items-center gap-2">
                 {me && <Avatar avatarKey={me.avatarKey} size={32} />}
-                <span>{actor.firstName}</span>
+                <span className="max-sm:sr-only">{actor.firstName}</span>
               </span>
             )}
             <SignOutForm locale={locale} className="uline">

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { runConsentReminders } from "@/server/services/consent-reminders";
 import { sendDueMessages } from "@/server/services/messaging";
+import { closeStaleSessions } from "@/server/services/sessions";
 import { sweepSpeech } from "@/server/services/speech";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ const JOBS: Record<string, () => Promise<unknown>> = {
   messages: () => sendDueMessages(),
   "consent-reminders": () => runConsentReminders(),
   speech: () => sweepSpeech(),
+  sessions: () => closeStaleSessions(),
 };
 
 function authorised(req: Request) {

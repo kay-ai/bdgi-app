@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/speech",
       "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/sessions",
+      "schedule": "0 2 * * *"
     }
   ]
 }

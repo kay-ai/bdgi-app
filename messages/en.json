@@ -1417,6 +1417,53 @@
         "noGroup": "Not yet",
         "safeguarding": "I confirm her safeguarding checks are done",
         "submit": "Add coach"
+      },
+      "sessions": {
+        "title": "Sessions ({n})",
+        "none": "No sessions yet.",
+        "when": "When",
+        "status": "Status",
+        "present": "Present",
+        "live": "Live now",
+        "open": "Open",
+        "minutes": "{n} min",
+        "st": {
+          "planned": "Planned",
+          "held": "Held",
+          "cancelled": "Cancelled"
+        },
+        "generate": "Create the weekly sessions",
+        "generateLead": "Uses the group's meeting day, time and dates. Dates already created are skipped. Public holidays are not skipped: cancel those one by one.",
+        "created": "{n, plural, =0 {No new sessions: they're all there.} one {# session created.} other {# sessions created.}}",
+        "addTitle": "Add one session",
+        "date": "Date",
+        "time": "Time (Lagos)",
+        "duration": "Minutes",
+        "venue": "Venue",
+        "add": "Add session",
+        "cancel": "Cancel",
+        "reason": "Reason, e.g. public holiday",
+        "cancelConfirm": "Cancel session",
+        "keep": "Keep it",
+        "err": {
+          "denied": "You can't change this group's sessions.",
+          "invalid": "Check the date, time and minutes.",
+          "closed": "This group has finished or was cancelled.",
+          "no_schedule": "Set the group's meeting day and time first (Edit group, below).",
+          "not_planned": "Only planned sessions that haven't started can be cancelled.",
+          "failed": "Something went wrong. Please try again."
+        }
+      },
+      "chats": {
+        "title": "Chats",
+        "lead": "Read-only. Each time you open a chat it is recorded in the audit log.",
+        "groupTitle": "{name} group chat",
+        "directTitle": "Coach {coach} and {student}",
+        "last": "Last message {date}",
+        "empty": "No messages yet",
+        "reported": "{n, plural, one {# reported} other {# reported}}",
+        "back": "Back to {name}",
+        "audited": "You are reading this chat as staff. This visit is recorded in the audit log."
       }
     },
     "student": {
@@ -1650,7 +1697,9 @@
         "sat": "Saturdays"
       },
       "soon": "We'll message you soon.",
-      "coachesLabel": "Coaches"
+      "coachesLabel": "Coaches",
+      "nextSession": "Next session: {when}",
+      "chatLink": "Chat with your group"
     },
     "badges": {
       "title": "My badges",
@@ -1939,6 +1988,90 @@
       "done": "Passed",
       "upNext": "Up next",
       "notYet": "Not yet"
+    }
+  },
+  "live": {
+    "liveNow": "Live now",
+    "bannerTitle": "{name} has started. Your coach is waiting!",
+    "join": "Join the session",
+    "back": "Back to the Hub",
+    "status": {
+      "planned": "Coming up",
+      "held": "Finished",
+      "cancelled": "Cancelled"
+    },
+    "videoTitle": "Video call for {name}",
+    "noVideoTitle": "The video call isn't switched on yet",
+    "noVideoLead": "BGDI hasn't connected a video service to the app yet. Your coach will tell you how to join today.",
+    "videoError": "We couldn't open the video call",
+    "videoErrorLead": "Refresh the page to try again. If it still won't open, tell your coach in the group chat.",
+    "notLiveTitle": "This session hasn't started yet",
+    "notLiveLead": "When your coach starts it, a gold Join button appears on your Hub and we'll email you.",
+    "endedTitle": "This session has finished",
+    "endedLead": "Well done for coming. See you next time!",
+    "safety": "Be kind and keep it about debate. Don't share phone numbers or social media here. If anything makes you uncomfortable, leave the call and tell a BGDI staff member.",
+    "attendanceTitle": "Who's here",
+    "toChat": "Open the group chat",
+    "start": "Start session",
+    "starting": "Starting…",
+    "end": "End session",
+    "endAsk": "End the session for everyone?",
+    "endConfirm": "Yes, end it",
+    "cancel": "Not yet",
+    "noStudents": "No students in this group yet.",
+    "presentCount": "{n} of {of} here",
+    "mark": {
+      "present": "Here",
+      "absent": "Absent",
+      "excused": "Excused"
+    },
+    "saveAttendance": "Save attendance",
+    "saving": "Saving…",
+    "saved": "Attendance saved.",
+    "groupsTitle": "Your groups",
+    "students": "{n, plural, one {# student} other {# students}}",
+    "rejoin": "Go back in",
+    "next": "Next: {when}",
+    "startHint": "You can start it from 30 minutes before.",
+    "noneScheduled": "No sessions planned yet. BGDI staff will add them.",
+    "groupChat": "Group chat",
+    "err": {
+      "too_early": "It's too early. You can start from 30 minutes before the session.",
+      "too_late": "This session's time has passed. Ask BGDI staff to add a new one.",
+      "not_planned": "This session was cancelled or has already happened.",
+      "denied": "You can't start sessions for this group.",
+      "error": "Something went wrong. Please try again."
+    }
+  },
+  "chat": {
+    "title": "Messages",
+    "unread": "{n, plural, one {# new message} other {# new messages}}",
+    "noneTitle": "No chats yet",
+    "noneLead": "When you join a group, its chat appears here.",
+    "groupChat": "Group chat",
+    "privateWith": "Private chat · {group}",
+    "startTitle": "Start a private chat",
+    "messageCoach": "Message Coach {name}",
+    "messageName": "Message {name}",
+    "rules": "BGDI staff can read every chat to keep everyone safe. Phone numbers, emails and links are blocked. If a message upsets you, tap Report and staff will look into it.",
+    "notice": "BGDI staff can read this chat. Be kind, and don't share phone numbers, emails or links.",
+    "noticeDirect": "This is a private chat between a coach and a student. BGDI staff can read it, and both of you are told that. Phone numbers, emails and links are blocked.",
+    "messages": "Messages",
+    "empty": "No messages yet. Say hello!",
+    "coach": "Coach",
+    "hidden": "This message was reported and hidden.",
+    "reported": "Reported",
+    "report": "Report",
+    "reportAsk": "Report this message? It will be hidden and BGDI's safeguarding team will look at it.",
+    "placeholder": "Write a message",
+    "send": "Send",
+    "back": "All messages",
+    "err": {
+      "blocked_phone": "Phone numbers can't be shared in chat. Keep contact on the BGDI app.",
+      "blocked_email": "Email addresses can't be shared in chat. Keep contact on the BGDI app.",
+      "blocked_link": "Links can't be shared in chat.",
+      "not_allowed": "You can't send messages in this chat.",
+      "error": "Your message didn't send. Please try again."
     }
   }
 }

@@ -277,6 +277,7 @@ a:hover .frame > img, a.frame:hover > img { transform: scale(1.03); }
 .field { display: grid; gap: 8px; }
 .field label, .field legend { font-size: 14px; font-weight: 500; }
 .field .hint { font-size: 14px; color: var(--p-muted); }
+.error { color: var(--p-danger); }
 .field .error { font-size: 14px; color: var(--p-danger); }
 .input {
   width: 100%; min-height: 48px; padding: 12px 14px;
@@ -741,3 +742,8 @@ a.console-list__row:hover { background: rgb(26 23 18 / 0.04); }
   .console-panel { padding: 16px; }
   .console-chart__n { font-size: 13px; }
 }
+
+/* D-025: the student's "Join the session" button glows outward while her group is live. */
+@keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgb(255 184 0 / 0.7); } 70% { box-shadow: 0 0 0 16px rgb(255 184 0 / 0); } 100% { box-shadow: 0 0 0 0 rgb(255 184 0 / 0); } }
+.live-pulse { animation: live-pulse 1.6s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) { .live-pulse { animation: none; } }
