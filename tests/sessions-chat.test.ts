@@ -84,6 +84,19 @@ describe("planning sessions", () => {
     expect(one.ok).toBe(true);
     if (one.ok) expect(await cancelSession(admin, one.id, "Public holiday")).toEqual({ ok: true });
   });
+
+  it("a coach can add a session for her own group, from now on; not for other groups", async () => {
+    const now = new Date("2027-01-10T09:00:00Z"); // 10:00 in Lagos
+    const later = await addSession(coach, cohortId, { date: "2027-01-10", time: "16:00", durationMinutes: 45 }, null, now);
+    expect(later.ok).toBe(true);
+    expect(await addSession(coach, cohortId, { date: "2027-01-09", time: "16:00" }, null, now)).toEqual({ ok: false, code: "past" });
+    await expect(addSession(coach, otherCohortId, { date: "2027-01-10", time: "16:00" }, null, now)).rejects.toThrow();
+    await expect(addSession(amara, cohortId, { date: "2027-01-10", time: "16:00" }, null, now)).rejects.toThrow();
+    // Staff may still record a session after the fact.
+    const past = await addSession(admin, cohortId, { date: "2027-01-09", time: "16:00" }, null, now);
+    expect(past.ok).toBe(true);
+    for (const x of [later, past]) if (x.ok) await cancelSession(admin, x.id, "test");
+  });
 });
 
 describe("a live session", () => {
