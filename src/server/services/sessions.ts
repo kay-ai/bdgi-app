@@ -271,15 +271,7 @@ export async function sessionRoom(actor: Actor | null, sessionId: string, now = 
         .onConflictDoNothing({ target: [s.attendance.sessionId, s.attendance.personId] });
     }
   }
-  const roster = runs
-    ? await db
-        .select({ personId: s.person.id, firstName: s.person.firstName, status: s.attendance.status })
-        .from(s.cohortMember)
-        .innerJoin(s.person, eq(s.person.id, s.cohortMember.personId))
-        .leftJoin(s.attendance, and(eq(s.attendance.sessionId, sessionId), eq(s.attendance.personId, s.person.id)))
-        .where(and(eq(s.cohortMember.cohortId, r.cohort.id), eq(s.cohortMember.role, "student"), isNull(s.cohortMember.leftOn)))
-        .orderBy(asc(s.person.firstName))
-    : [];
+  const roster = runs ? await rosterOf(sessionId, r.cohort.id) : [];
   return {
     session: { id: r.session.id, startsAt: r.session.startsAt, durationMinutes: r.session.durationMinutes, venue: r.session.venue, status: r.session.status, liveStartedAt: r.session.liveStartedAt },
     cohort: { id: r.cohort.id, name: r.cohort.name, school: r.schoolName },
@@ -289,6 +281,25 @@ export async function sessionRoom(actor: Actor | null, sessionId: string, now = 
     provider: videoProvider().name,
     roster,
   };
+}
+
+/** The group's current students with their mark for this session. */
+function rosterOf(sessionId: string, cohortId: string) {
+  return db
+    .select({ personId: s.person.id, firstName: s.person.firstName, status: s.attendance.status })
+    .from(s.cohortMember)
+    .innerJoin(s.person, eq(s.person.id, s.cohortMember.personId))
+    .leftJoin(s.attendance, and(eq(s.attendance.sessionId, sessionId), eq(s.attendance.personId, s.person.id)))
+    .where(and(eq(s.cohortMember.cohortId, cohortId), eq(s.cohortMember.role, "student"), isNull(s.cohortMember.leftOn)))
+    .orderBy(asc(s.person.firstName));
+}
+
+/** The attendance list again, for the coach's page to refresh while students come in. */
+export async function sessionRoster(actor: Actor | null, sessionId: string) {
+  if (!actor || !isUuid(sessionId)) return null;
+  const r = await sessionInfo(sessionId);
+  if (!r || !mayRun(actor, r.cohort.id, r.stateId)) return null;
+  return rosterOf(sessionId, r.cohort.id);
 }
 
 export const attendanceInput = z.object({

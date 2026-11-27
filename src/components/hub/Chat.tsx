@@ -15,6 +15,7 @@ const POLL_MS = 4000;
 export function ChatThread({ threadId, initial, readOnly, kind }: { threadId: string; initial: ChatMessage[]; readOnly?: boolean; kind: "group" | "direct" }) {
   const t = useTranslations("chat");
   const format = useFormatter();
+  const router = useRouter();
   const [messages, setMessages] = useState(initial);
   const [text, setText] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -30,6 +31,10 @@ export function ChatThread({ threadId, initial, readOnly, kind }: { threadId: st
     if (fresh?.length) setMessages((m) => [...m, ...fresh.filter((f) => !m.some((x) => x.id === f.id))]);
   }, [threadId]);
 
+  // Opening the chat marks it read; refresh so the header's new-message count drops.
+  useEffect(() => {
+    if (!readOnly) router.refresh();
+  }, [readOnly, router]);
   useEffect(() => {
     const id = window.setInterval(poll, POLL_MS);
     return () => window.clearInterval(id);
@@ -66,7 +71,7 @@ export function ChatThread({ threadId, initial, readOnly, kind }: { threadId: st
         {kind === "direct" ? t("noticeDirect") : t("notice")}
       </p>
       <ol className="grid gap-3" aria-live="polite" aria-label={t("messages")}>
-        {messages.length === 0 && <li className="py-8 text-center text-muted">{t("empty")}</li>}
+        {messages.length === 0 && <li className="py-8 text-center text-muted">{readOnly ? t("emptyStaff") : t("empty")}</li>}
         {messages.map((m) => (
           <li key={m.id} className={`flex ${m.mine ? "justify-end" : "justify-start"}`}>
             <div className={`group grid max-w-[85%] gap-1 rounded-[18px] px-4 py-2.5 ${m.mine ? "rounded-br-[6px] bg-[#1a1712] text-[#fbf7ef]" : "rounded-bl-[6px] bg-surface"} ${m.reported ? "opacity-70" : ""}`}>

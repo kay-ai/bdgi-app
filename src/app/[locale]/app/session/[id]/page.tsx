@@ -95,6 +95,7 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
           </div>
           <Attendance
             sessionId={room.session.id}
+            live={room.live}
             roster={room.roster.map((r) => ({ personId: r.personId, firstName: r.firstName, status: (r.status as "present" | "absent" | "excused" | null) ?? null }))}
           />
         </section>

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { Radio, Square } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
-import { attendanceAction, endSessionAction, startSessionAction } from "@/app/[locale]/app/session/actions";
+import { attendanceAction, endSessionAction, rosterAction, startSessionAction } from "@/app/[locale]/app/session/actions";
 
 /** "Start session": opens the room, emails the students, then takes the coach in (D-025). */
 export function StartSession({ sessionId, disabled }: { sessionId: string; disabled?: boolean }) {
@@ -77,12 +77,30 @@ export function EndSession({ sessionId }: { sessionId: string }) {
 
 type Mark = "present" | "absent" | "excused";
 
-/** The coach's attendance list: tap to change; saved together. */
-export function Attendance({ sessionId, roster }: { sessionId: string; roster: { personId: string; firstName: string; status: Mark | null }[] }) {
+/**
+ * The coach's attendance list: tap to change; saved together. While the session is live it re-reads
+ * the list every 15 seconds, so students who join show as here; marks she changed are kept.
+ */
+export function Attendance({ sessionId, roster, live }: { sessionId: string; roster: { personId: string; firstName: string; status: Mark | null }[]; live?: boolean }) {
   const t = useTranslations("live");
   const [marks, setMarks] = useState<Record<string, Mark>>(() => Object.fromEntries(roster.map((r) => [r.personId, r.status ?? "absent"])));
   const [state, setState] = useState<"idle" | "saved" | "error">("idle");
   const [pending, start] = useTransition();
+  const touched = useRef(new Set<string>());
+  useEffect(() => {
+    if (!live) return;
+    const id = window.setInterval(async () => {
+      if (document.visibilityState !== "visible") return;
+      const fresh = await rosterAction(sessionId).catch(() => null);
+      if (!fresh) return;
+      setMarks((m) => {
+        const next = { ...m };
+        for (const f of fresh) if (f.status && !touched.current.has(f.personId)) next[f.personId] = f.status;
+        return next;
+      });
+    }, 15_000);
+    return () => window.clearInterval(id);
+  }, [live, sessionId]);
   if (!roster.length) return <p className="text-muted">{t("noStudents")}</p>;
   const present = Object.values(marks).filter((m) => m === "present").length;
   return (
@@ -100,6 +118,7 @@ export function Attendance({ sessionId, roster }: { sessionId: string; roster: {
                   role="radio"
                   aria-checked={marks[r.personId] === m}
                   onClick={() => {
+                    touched.current.add(r.personId);
                     setState("idle");
                     setMarks((x) => ({ ...x, [r.personId]: m }));
                   }}
