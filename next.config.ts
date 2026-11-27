@@ -24,7 +24,7 @@ const config: NextConfig = {
       // Listed after the rule above so its Permissions-Policy wins.
       ...["/app/session/:path*", "/:locale/app/session/:path*"].map((source) => ({
         source,
-        headers: [{ key: "Permissions-Policy", value: "camera=*, microphone=*, display-capture=*, fullscreen=*, autoplay=*, geolocation=()" }],
+        headers: [{ key: "Permissions-Policy", value: "camera=*, microphone=*, speaker-selection=*, display-capture=*, fullscreen=*, autoplay=*, screen-wake-lock=*, geolocation=()" }],
       })),
     ];
   },

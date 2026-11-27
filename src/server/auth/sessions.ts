@@ -7,10 +7,13 @@ import { STAFF_ROLES, type Actor } from "@/server/permissions/can";
 
 export const SESSION_COOKIE = "bgdi_session";
 
-/** Phone and email sessions last 30 days; staff 12 hours; the gap between password and 2-step 10 minutes. */
-export const SESSION_TTL = { code: 30 * 86_400, staff: 12 * 3_600, password: 10 * 60 } as const;
+/**
+ * Hub sessions (a phone or email code, or Google) remember the browser for a year, counted from
+ * the last visit; staff 12 hours; the gap between password and 2-step 10 minutes.
+ */
+export const SESSION_TTL = { code: 365 * 86_400, staff: 12 * 3_600, password: 10 * 60 } as const;
 
-export type SessionMethod = "phone" | "email" | "staff";
+export type SessionMethod = "phone" | "email" | "google" | "staff";
 
 export async function createSession(input: {
   userId: string;
@@ -48,9 +51,14 @@ export async function readSession(token: string | null | undefined): Promise<{ s
     .innerJoin(s.appUser, eq(s.appUser.id, s.authSession.userId))
     .where(and(eq(s.authSession.tokenHash, sha256(token)), gt(s.authSession.expiresAt, new Date())));
   if (!row || row.user.deactivatedAt) return null;
-  // Touch at most once a minute.
+  // Touch at most once a minute. A full Hub session also moves its end date on, so it lasts a
+  // year from the last visit (the middleware renews the cookie to match).
   if (Date.now() - row.session.lastSeenAt.getTime() > 60_000) {
-    await db.update(s.authSession).set({ lastSeenAt: new Date() }).where(eq(s.authSession.id, row.session.id));
+    const slide = row.session.method !== "staff" && row.session.stage === "full";
+    await db
+      .update(s.authSession)
+      .set({ lastSeenAt: new Date(), ...(slide ? { expiresAt: new Date(Date.now() + SESSION_TTL.code * 1000) } : {}) })
+      .where(eq(s.authSession.id, row.session.id));
   }
   return row;
 }

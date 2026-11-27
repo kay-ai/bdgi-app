@@ -850,7 +850,16 @@
     "staffCta": "Staff sign-in",
     "help": "Need help?",
     "helpCta": "Contact us",
-    "leadEmail": "We will send a six-digit code to the email you gave when you joined."
+    "leadEmail": "We will send a six-digit code to the email you gave when you joined.",
+    "google": "Continue with Google",
+    "or": "or",
+    "googleErr": {
+      "failed": "We couldn't sign you in with Google. Please try again.",
+      "cancelled": "Google sign-in was cancelled.",
+      "deactivated": "This account is closed. Contact us if you think this is a mistake.",
+      "staff": "BGDI staff sign in with a password. Use the staff sign-in below.",
+      "rate_limited": "Too many tries. Please wait an hour and try again."
+    }
   },
   "console": {
     "title": "BGDI console",
@@ -2054,7 +2063,11 @@
     "length": "Length",
     "minutes": "{n} min",
     "addSession": "Add session",
-    "close": "Cancel"
+    "close": "Cancel",
+    "phoneTitle": "The call opens full screen on your phone",
+    "phoneLead": "Tap below to join. Allow your camera and microphone when asked, and turn your phone's volume up. Come back to this tab when you're done.",
+    "phoneJoin": "Open the call",
+    "fullScreen": "Full screen"
   },
   "chat": {
     "title": "Messages",

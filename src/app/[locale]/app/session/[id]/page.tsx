@@ -4,6 +4,7 @@ import { ArrowLeft, MessageCircle, ShieldCheck, Video } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Chip, Hero } from "@/components/coach/parts";
 import { Attendance, EndSession } from "@/components/hub/Live";
+import { VideoCall } from "@/components/hub/VideoCall";
 import { requireActor } from "@/server/auth/current";
 import { hasRole } from "@/server/permissions/can";
 import { sessionRoom } from "@/server/services/sessions";
@@ -58,14 +59,7 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
 
       {room.live ? (
         room.joinUrl ? (
-          <div className="overflow-hidden rounded-[24px] bg-[#1a1712]" style={{ aspectRatio: "16 / 10", minHeight: 420 }}>
-            <iframe
-              src={room.joinUrl}
-              title={t("videoTitle", { name: room.cohort.name })}
-              allow="camera; microphone; fullscreen; display-capture; autoplay"
-              className="h-full w-full border-0"
-            />
-          </div>
+          <VideoCall joinUrl={room.joinUrl} title={t("videoTitle", { name: room.cohort.name })} />
         ) : (
           <div className="card grid place-items-center gap-3 !p-10 text-center">
             <Video size={36} aria-hidden="true" />

@@ -143,7 +143,19 @@ export async function verifySignInCode(subject: Subject, code: string, meta: Met
     .returning({ id: s.authCode.id });
   if (!used) return { ok: false, code: "expired" };
 
-  const user = await findOrCreateUser(subject, subjectHash);
+  return openSession(subject, subject.kind, meta);
+}
+
+/**
+ * The shared end of every Hub sign-in (a code, or Google): find or create the user for this phone
+ * or email, open a session and decide where to go next. Staff never sign in this way.
+ */
+export async function openSession(
+  subject: Subject,
+  method: "phone" | "email" | "google",
+  meta: Meta = {},
+): Promise<{ ok: true; token: string; maxAge: number; next: string } | { ok: false; code: "invalid" | "deactivated" }> {
+  const user = await findOrCreateUser(subject, lookupHash(subject.value));
   if (user.deactivatedAt) return { ok: false, code: "deactivated" };
   if (user.isStaff) return { ok: false, code: "invalid" }; // staff use /staff/sign-in
 
@@ -151,13 +163,13 @@ export async function verifySignInCode(subject: Subject, code: string, meta: Met
   const only = profiles.length === 1 ? profiles[0]! : null;
   const session = await createSession({
     userId: user.id,
-    method: subject.kind,
+    method,
     stage: "full",
     activePersonId: only?.personId ?? null,
     ...meta,
   });
   await db.update(s.appUser).set({ lastSignInAt: new Date(), updatedAt: new Date() }).where(eq(s.appUser.id, user.id));
-  if (only) await audit(db, { actor: null, locale: "en", ip: meta.ip }, { action: "auth.sign_in", entityType: "person", entityId: only.personId, meta: { method: subject.kind } });
+  if (only) await audit(db, { actor: null, locale: "en", ip: meta.ip }, { action: "auth.sign_in", entityType: "person", entityId: only.personId, meta: { method } });
   return { ok: true, token: session.token, maxAge: session.maxAge, next: nextAfterSignIn(profiles) };
 }
 

@@ -42,7 +42,7 @@ export const authSession = pgTable(
       .notNull()
       .references(() => appUser.id, { onDelete: "cascade" }),
     stage: text("stage", { enum: ["password", "full"] }).notNull().default("full"),
-    method: text("method", { enum: ["phone", "email", "staff"] }).notNull(),
+    method: text("method", { enum: ["phone", "email", "google", "staff"] }).notNull(),
     activePersonId: uuid("active_person_id"),
     expiresAt: tz("expires_at").notNull(),
     lastSeenAt: tz("last_seen_at").notNull().defaultNow(),
