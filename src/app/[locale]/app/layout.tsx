@@ -9,6 +9,9 @@ import { currentSession, requireActor } from "@/server/auth/current";
 import { profilesForUser } from "@/server/auth/sessions";
 import { hasRole, isStaff } from "@/server/permissions/can";
 import { unreadCount } from "@/server/services/chat";
+import { liveSessionFor } from "@/server/services/sessions";
+import { LiveBar } from "@/components/hub/LiveBar";
+import { LiveWatch } from "@/components/hub/LiveWatch";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,7 +30,7 @@ export default async function HubLayout({ children, params }: { children: ReactN
   const t = await getTranslations();
   // D-025: students and coaches chat with their group; show how many messages are new.
   const chats = hasRole(actor, "student") || hasRole(actor, "volunteer");
-  const unread = chats ? await unreadCount(actor.personId) : 0;
+  const [unread, live] = chats ? await Promise.all([unreadCount(actor.personId), liveSessionFor(actor.personId)]) : [0, null];
   return (
     <div className="min-h-svh bg-bg">
       <a href="#hub-main" className="skip-link">
@@ -77,6 +80,8 @@ export default async function HubLayout({ children, params }: { children: ReactN
           </div>
         </div>
       </header>
+      {chats && <LiveWatch liveId={live?.id ?? null} />}
+      {live && <LiveBar live={{ id: live.id, cohortName: live.cohortName }} />}
       <main id="hub-main" className="mx-auto grid max-w-[960px] grid-cols-[minmax(0,1fr)] gap-6 px-4 pb-24 pt-8">
         {children}
       </main>

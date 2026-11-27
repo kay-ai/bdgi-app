@@ -2041,7 +2041,9 @@
       "not_planned": "This session was cancelled or has already happened.",
       "denied": "You can't start sessions for this group.",
       "error": "Something went wrong. Please try again."
-    }
+    },
+    "barTitle": "{name} is live now",
+    "barJoin": "Join"
   },
   "chat": {
     "title": "Messages",
@@ -2072,6 +2074,7 @@
       "blocked_link": "Links can't be shared in chat.",
       "not_allowed": "You can't send messages in this chat.",
       "error": "Your message didn't send. Please try again."
-    }
+    },
+    "emptyStaff": "No messages yet."
   }
 }

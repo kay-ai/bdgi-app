@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getActor, requestMeta } from "@/server/auth/current";
 import { Forbidden } from "@/server/permissions/assert";
-import { addSession, cancelSession, endSession, generateSessions, recordAttendance, startSession } from "@/server/services/sessions";
+import { addSession, cancelSession, endSession, generateSessions, recordAttendance, sessionRoster, startSession } from "@/server/services/sessions";
 
 export type SessionResult = { ok: true; id?: string; created?: number; saved?: number } | { ok: false; code: string };
 
@@ -20,6 +20,12 @@ async function run<T extends { ok: boolean }>(fn: (actor: Awaited<ReturnType<typ
     console.error("[sessions] action failed", e instanceof Error ? e.message : "unexpected");
     return { ok: false, code: "error" };
   }
+}
+
+/** The coach's attendance list, re-read every few seconds while the session page is open. */
+export async function rosterAction(sessionId: string): Promise<{ personId: string; status: "present" | "absent" | "excused" | null }[] | null> {
+  const rows = await sessionRoster(await getActor(), String(sessionId)).catch(() => null);
+  return rows ? rows.map((r) => ({ personId: r.personId, status: r.status as "present" | "absent" | "excused" | null })) : null;
 }
 
 export async function startSessionAction(sessionId: string): Promise<SessionResult> {

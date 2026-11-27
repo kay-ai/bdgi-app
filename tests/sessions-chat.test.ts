@@ -5,7 +5,7 @@ import { encrypt, lookupHash } from "@/lib/crypto";
 import type { Actor } from "@/server/permissions/can";
 import { loadActor } from "@/server/permissions/scope";
 import { blockedContent, groupChats, myChats, openDirect, readThread, reportMessage, sendMessage, unreadCount } from "@/server/services/chat";
-import { addSession, cancelSession, coachSessions, endSession, generateSessions, liveSessionFor, recordAttendance, sessionRoom, startSession, watInstant, weeklyDates } from "@/server/services/sessions";
+import { addSession, cancelSession, coachSessions, endSession, generateSessions, liveSessionFor, recordAttendance, sessionRoom, sessionRoster, startSession, watInstant, weeklyDates } from "@/server/services/sessions";
 import { setupDb } from "./support/db";
 
 /** Live group sessions and group chat (D-025). */
@@ -121,6 +121,9 @@ describe("a live session", () => {
     const asCoach = await sessionRoom(coach, sessionId, now);
     expect(asCoach?.runs).toBe(true);
     expect(asCoach?.roster.map((r) => r.firstName).sort()).toEqual(["Amara", "Bisi"]);
+    // The coach's list refreshes on its own; students can't read it.
+    expect((await sessionRoster(coach, sessionId))?.find((r) => r.personId === amara.personId)?.status).toBe("present");
+    expect(await sessionRoster(amara, sessionId)).toBeNull();
   });
 
   it("the coach corrects attendance, but only for her group's students", async () => {

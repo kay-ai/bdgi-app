@@ -19,6 +19,13 @@ const config: NextConfig = {
     return [
       { source: "/((?!embed/).*)", headers: [...securityHeaders, { key: "X-Frame-Options", value: "DENY" }] },
       { source: "/embed/:path*", headers: [...securityHeaders, { key: "Content-Security-Policy", value: "frame-ancestors *" }] },
+      // The live session page embeds the video call (D-025), which needs the camera, microphone and
+      // screen sharing. Allowed here only; the iframe's `allow` limits it to the call's own origin.
+      // Listed after the rule above so its Permissions-Policy wins.
+      ...["/app/session/:path*", "/:locale/app/session/:path*"].map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=*, microphone=*, display-capture=*, fullscreen=*, autoplay=*, geolocation=()" }],
+      })),
     ];
   },
 };
