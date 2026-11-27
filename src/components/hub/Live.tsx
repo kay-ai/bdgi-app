@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { Radio, Square } from "lucide-react";
+import { CalendarPlus, Radio, Square } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
-import { attendanceAction, endSessionAction, rosterAction, startSessionAction } from "@/app/[locale]/app/session/actions";
+import { addSessionAction, attendanceAction, endSessionAction, rosterAction, startSessionAction } from "@/app/[locale]/app/session/actions";
 
 /** "Start session": opens the room, emails the students, then takes the coach in (D-025). */
 export function StartSession({ sessionId, disabled }: { sessionId: string; disabled?: boolean }) {
@@ -31,6 +31,109 @@ export function StartSession({ sessionId, disabled }: { sessionId: string; disab
         <Radio size={18} aria-hidden="true" />
         {pending ? t("starting") : t("start")}
       </button>
+      {err && (
+        <p className="error text-[14px]" role="alert">
+          {err}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Today's date and a time in Lagos, as the form fields want them; the time rounded to the quarter hour. */
+function lagosNow(roundUp: boolean) {
+  const d = new Date(Date.now() + (roundUp ? 15 * 60_000 : 0));
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Lagos", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(d)
+      .map((p) => [p.type, p.value]),
+  );
+  const m = Number(parts.minute);
+  const q = roundUp ? Math.floor(m / 15) * 15 : m;
+  return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour}:${String(q).padStart(2, "0")}` };
+}
+
+/**
+ * A coach's quick way to plan a session for her group (D-025): "Start one now" adds a session for
+ * this minute and starts it; "Schedule" opens a short form already set to today, next quarter hour.
+ */
+export function QuickAddSession({ cohortId }: { cohortId: string }) {
+  const t = useTranslations("live");
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [pending, start] = useTransition();
+  const [err, setErr] = useState<string | null>(null);
+  const [form, setForm] = useState(() => ({ ...lagosNow(true), duration: 60 }));
+  const fail = (code: string) => t(`err.${["past", "closed", "invalid", "denied", "too_early", "too_late"].includes(code) ? code : "error"}` as never);
+
+  const startNow = () =>
+    start(async () => {
+      setErr(null);
+      const n = lagosNow(false);
+      const r = await addSessionAction(cohortId, { date: n.date, time: n.time, durationMinutes: 60 });
+      if (!r.ok || !r.id) return setErr(fail(r.ok ? "error" : r.code));
+      const s = await startSessionAction(r.id);
+      if (!s.ok) return setErr(fail(s.code));
+      router.push(`/app/session/${r.id}`);
+    });
+
+  const schedule = () =>
+    start(async () => {
+      setErr(null);
+      const r = await addSessionAction(cohortId, { date: form.date, time: form.time, durationMinutes: form.duration });
+      if (!r.ok) return setErr(fail(r.code));
+      setOpen(false);
+      router.refresh();
+    });
+
+  return (
+    <div className="grid gap-3">
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className="btn btn--plain !min-h-11" disabled={pending} onClick={startNow}>
+          <Radio size={18} aria-hidden="true" />
+          {t("startNow")}
+        </button>
+        <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#fbf7ef] px-4 text-[15px] font-medium" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          <CalendarPlus size={18} aria-hidden="true" />
+          {t("schedule")}
+        </button>
+      </div>
+      {open && (
+        <form
+          className="grid gap-3 rounded-[16px] bg-[#fbf7ef] p-4 sm:grid-cols-3 sm:items-end"
+          onSubmit={(e) => {
+            e.preventDefault();
+            schedule();
+          }}
+        >
+          <div className="field">
+            <label htmlFor={`${cohortId}-qd`}>{t("date")}</label>
+            <input id={`${cohortId}-qd`} className="input" type="date" required value={form.date} min={lagosNow(false).date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
+          </div>
+          <div className="field">
+            <label htmlFor={`${cohortId}-qt`}>{t("time")}</label>
+            <input id={`${cohortId}-qt`} className="input" type="time" required step={300} value={form.time} onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))} />
+          </div>
+          <div className="field">
+            <label htmlFor={`${cohortId}-ql`}>{t("length")}</label>
+            <select id={`${cohortId}-ql`} className="input" value={form.duration} onChange={(e) => setForm((f) => ({ ...f, duration: Number(e.target.value) }))}>
+              {[30, 45, 60, 90, 120].map((m) => (
+                <option key={m} value={m}>
+                  {t("minutes", { n: m })}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 sm:col-span-3">
+            <button type="submit" className="btn btn--plain" disabled={pending}>
+              {pending ? t("saving") : t("addSession")}
+            </button>
+            <button type="button" className="uline text-[15px]" onClick={() => setOpen(false)}>
+              {t("cancel")}
+            </button>
+          </div>
+        </form>
+      )}
       {err && (
         <p className="error text-[14px]" role="alert">
           {err}

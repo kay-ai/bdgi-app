@@ -106,18 +106,26 @@ export const sessionInput = z.object({
   venue: z.string().trim().max(120).optional().or(z.literal("")),
 });
 
-export async function addSession(actor: Actor | null, cohortId: string, raw: unknown, ip: string | null = null): Promise<Result<{ id: string }>> {
+/**
+ * Add one session. Staff (`session.manage`) may add any; a coach of the group (who may run its
+ * sessions, `session.mark_held`) may add one from now on, to a group that is still going (D-025).
+ */
+export async function addSession(actor: Actor | null, cohortId: string, raw: unknown, ip: string | null = null, now = new Date()): Promise<Result<{ id: string }>> {
   const g = await cohortInfo(cohortId);
   if (!g) return { ok: false, code: "not_found" };
-  const ctx = assertCan(actor, "session.manage", { ip, resource: { stateId: g.stateId } });
+  const staff = can(actor, "session.manage", { stateId: g.stateId });
+  const ctx = staff ? { actor, locale: "en" as const, ip } : assertCan(actor, "session.mark_held", { ip, resource: { cohortIds: [cohortId], stateId: g.stateId } });
   const p = sessionInput.safeParse(raw);
   if (!p.success) return { ok: false, code: "invalid" };
+  if (g.cohort.status === "completed" || g.cohort.status === "cancelled") return { ok: false, code: "closed" };
+  const startsAt = watInstant(p.data.date, p.data.time);
+  if (!staff && startsAt.getTime() < now.getTime() - 15 * 60_000) return { ok: false, code: "past" };
   const id = await db.transaction(async (tx) => {
     const [row] = await tx
       .insert(s.session)
-      .values({ cohortId, startsAt: watInstant(p.data.date, p.data.time), durationMinutes: p.data.durationMinutes, venue: p.data.venue || g.cohort.venue })
+      .values({ cohortId, startsAt, durationMinutes: p.data.durationMinutes, venue: p.data.venue || g.cohort.venue })
       .returning({ id: s.session.id });
-    await audit(tx, ctx, { action: "session.create", entityType: "session", entityId: row!.id });
+    await audit(tx, ctx, { action: "session.create", entityType: "session", entityId: row!.id, meta: { by: staff ? "staff" : "coach" } });
     return row!.id;
   });
   return { ok: true, id };

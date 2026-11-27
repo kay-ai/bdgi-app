@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { requireActor } from "@/server/auth/current";
 import { hasRole, homeFor } from "@/server/permissions/can";
 import { CoachSupervision } from "@/components/hub/CoachSupervision";
-import { StartSession } from "@/components/hub/Live";
+import { QuickAddSession, StartSession } from "@/components/hub/Live";
 import { GOLD } from "@/components/coach/parts";
 import { supervision } from "@/server/services/coach-supervision";
 import { coachSessions } from "@/server/services/sessions";
@@ -80,8 +80,9 @@ export default async function VolunteerHome({ params }: { params: Promise<{ loca
                     {g.next.canStart ? <StartSession sessionId={g.next.id} /> : <p className="text-[14px] text-muted">{tl("startHint")}</p>}
                   </div>
                 ) : (
-                  <p className={`text-[14px] ${g.live ? "" : "text-muted"}`}>{tl("noneScheduled")}</p>
+                  <p className="text-[14px] text-muted">{tl("noneScheduled")}</p>
                 )}
+                {!g.live && g.status !== "completed" && g.status !== "cancelled" && <QuickAddSession cohortId={g.id} />}
                 <Link href="/app/chat" className="uline inline-flex w-fit items-center gap-2 text-[15px]">
                   <MessageCircle size={18} aria-hidden="true" />
                   {tl("groupChat")}

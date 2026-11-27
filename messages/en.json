@@ -2033,17 +2033,27 @@
     "rejoin": "Go back in",
     "next": "Next: {when}",
     "startHint": "You can start it from 30 minutes before.",
-    "noneScheduled": "No sessions planned yet. BGDI staff will add them.",
+    "noneScheduled": "No sessions planned yet.",
     "groupChat": "Group chat",
     "err": {
       "too_early": "It's too early. You can start from 30 minutes before the session.",
       "too_late": "This session's time has passed. Ask BGDI staff to add a new one.",
       "not_planned": "This session was cancelled or has already happened.",
       "denied": "You can't start sessions for this group.",
-      "error": "Something went wrong. Please try again."
+      "error": "Something went wrong. Please try again.",
+      "past": "That time has passed. Pick a time from now on.",
+      "closed": "This group has finished, so no new sessions can be added.",
+      "invalid": "Check the date and time."
     },
     "barTitle": "{name} is live now",
-    "barJoin": "Join"
+    "barJoin": "Join",
+    "startNow": "Start one now",
+    "schedule": "Schedule a session",
+    "date": "Date",
+    "time": "Time (Lagos)",
+    "length": "Length",
+    "minutes": "{n} min",
+    "addSession": "Add session"
   },
   "chat": {
     "title": "Messages",
