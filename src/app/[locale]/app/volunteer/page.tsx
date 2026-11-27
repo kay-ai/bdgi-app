@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { CalendarClock, MessageCircle, Users, Video } from "lucide-react";
-import { Link } from "@/i18n/navigation";
+import { Link, sessionHref } from "@/i18n/navigation";
 import { requireActor } from "@/server/auth/current";
 import { hasRole, homeFor } from "@/server/permissions/can";
 import { CoachSupervision } from "@/components/hub/CoachSupervision";
@@ -67,10 +67,10 @@ export default async function VolunteerHome({ params }: { params: Promise<{ loca
                   </p>
                 </div>
                 {g.live ? (
-                  <Link href={`/app/session/${g.live.id}`} className="btn btn--gold btn--plain">
+                  <a href={sessionHref(g.live.id, locale)} className="btn btn--gold btn--plain">
                     <Video size={18} aria-hidden="true" />
                     {tl("rejoin")}
-                  </Link>
+                  </a>
                 ) : g.next ? (
                   <div className="grid gap-3">
                     <p className="flex items-center gap-2 text-[15px] font-medium">

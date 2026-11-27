@@ -1,8 +1,8 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Video } from "lucide-react";
-import { Link, usePathname } from "@/i18n/navigation";
+import { sessionHref, usePathname } from "@/i18n/navigation";
 
 /**
  * While her group's session is live, a slim bar under the Hub header on every page, so a student
@@ -12,11 +12,12 @@ import { Link, usePathname } from "@/i18n/navigation";
 export function LiveBar({ live }: { live: { id: string; cohortName: string } }) {
   const t = useTranslations("live");
   const path = usePathname();
+  const locale = useLocale();
   if (path === "/app" || path.startsWith("/app/session/")) return null;
   return (
     <div className="mx-auto w-full max-w-[960px] px-4 pt-4">
-      <Link
-        href={`/app/session/${live.id}`}
+      <a
+        href={sessionHref(live.id, locale)}
         className="on-dark flex items-center justify-between gap-3 rounded-[18px] px-4 py-3"
         style={{ background: "#1a1712", color: "#fbf7ef" }}
       >
@@ -31,7 +32,7 @@ export function LiveBar({ live }: { live: { id: string; cohortName: string } }) 
           <Video size={18} aria-hidden="true" />
           {t("barJoin")}
         </span>
-      </Link>
+      </a>
     </div>
   );
 }

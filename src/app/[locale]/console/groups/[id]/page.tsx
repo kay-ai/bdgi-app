@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
+import { Link, sessionHref } from "@/i18n/navigation";
 import { AddStudents, AssignCoach, GroupForm, RemoveMember } from "@/components/console/GroupForms";
 import { AddSession, CancelSession, GenerateSessions } from "@/components/console/GroupSessions";
 import { formatDate } from "@/lib/format";
@@ -152,9 +152,9 @@ export default async function GroupPage({ params }: { params: Promise<{ locale: 
                     <td className="tabular">{x.status === "cancelled" ? "–" : x.present}</td>
                     <td>
                       {x.live ? (
-                        <Link href={`/app/session/${x.id}`} className="uline text-[14px]">
+                        <a href={sessionHref(x.id, locale)} className="uline text-[14px]">
                           {ts("open")}
-                        </Link>
+                        </a>
                       ) : (
                         g.canManage && x.status === "planned" && <CancelSession sessionId={x.id} />
                       )}
